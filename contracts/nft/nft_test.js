@@ -75,8 +75,7 @@ async function TestComposeNFT(){
 
 async function TestCashNFT(){
     try {
-        console.log("-----兑换----");
-        //兑换 参数{ user:地址, _seriesId:系列Id, _gradeNumber:各品级数量[S,A,B,C,D]} 
+        console.log("-----cash----");
         let res = await contractnftHandler.cashCheck("0xEdd7180D9356895E833c4781cF2733af76CC3A50",seriesId,[S_number,A_number,B_number,C_number,D_number],
         {gasLimit:GasLimit});
     } catch (e){

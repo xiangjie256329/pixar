@@ -11,6 +11,8 @@ module.exports = function (deployer){
                     //"0x4936e6A6A989b4B6101D7Bd70a8e494649853360",
                     "0x4Ac19Ef38DB893a9128a49C654680A5DdC3F8202",
                     WrappedPlatformToken.address,
+                    //build token
                     BuildToken.address,
+                    // nft
                     nft.address);
 };

@@ -4,7 +4,7 @@ const WrappedPlatformToken = artifacts.require("WrappedPlatformToken");
 const BlindBox = artifacts.require("BlindBox");
 module.exports = function (deployer) {
     deployer.deploy(PrizePool,
-                    //owner
+                    //blindbox address
                     BlindBox.address,
                     // platform_token
                     WrappedPlatformToken.address,
@@ -13,5 +13,8 @@ module.exports = function (deployer) {
                     // wbnb_address
                     "0x89ff1CF4fbBDD4cd5adB3C0FE67BdBBf30f6454c",
                     // ether min reward
-                    3);
+                    3,
+                    //gov address
+                    Gov.address
+                   );
 };

@@ -23,11 +23,13 @@ contract BlindBox is ERC20PermitUpgradeable {
     event resetMix(uint256 _series_id, uint256[]);
     event resetReward(uint256 _series_id, Reward);
     event resetLevel(uint256,uint256[]);
+    event reset_ratio(uint256);
 
     uint256 public constant MIN_NAME_LENGTH = 4;
     uint256 public constant MIN_IMAGE_LINK_LENGTH = 8;
     uint256 public constant MAX_IMAGE_LINK_LENGTH = 128;
     uint256 public constant MIX_TRUE_LOW_LEVEL_NUMBER = 5;
+    uint256 public constant DEFAUL_DECIMAL_PLACES = 100;
     struct Config {
         address owner;
         address lable_address;
@@ -92,20 +94,30 @@ contract BlindBox is ERC20PermitUpgradeable {
         emit mint_box(_box.series_id, _box.name);
     }
 
+
+    //ptoken - > k token ratio default 2 decimal places
+    uint256 ratio = 10000;
     function Draw(uint256 _number, address _inviter) public
     onlynumberof(_number)
     {
+        //keytoken(_number) * ratio = ptoken
+        uint256 drawNumber = _number * 10 ** 18 / DEFAUL_DECIMAL_PLACES * ratio;
         require(_inviter != address(0), "BlindBox Err:inviter cannot equal address(0)");
         WrappedToken platform_token = WrappedToken(config.platform_token);
         uint256 amount = platform_token.allowance(msg.sender, address(this));
-        require(amount == _number * 10 ** 18, "BlindBox Err:amount cannot than allowance");
-        TransferHelper.safeTransferFrom(config.platform_token, msg.sender, address(this), amount);
-        platform_token.burn(amount/2, msg.sender);
-        TransferHelper.safeTransfer(config.platform_token, config.prize_pool, amount / 10 * 4);
-        TransferHelper.safeTransfer(config.platform_token, config.lable_address, amount / 100 * 5);
-        TransferHelper.safeTransfer(config.platform_token, _inviter, amount / 100 * 5);
-        _mint(msg.sender, amount, _number);
+        require(amount >= drawNumber , "BlindBox Err:amount cannot than allowance");
+        TransferHelper.safeTransferFrom(config.platform_token, msg.sender, address(this), drawNumber);
+        platform_token.burn(drawNumber/2, msg.sender);
+        TransferHelper.safeTransfer(config.platform_token, config.prize_pool, drawNumber / 10 * 4);
+        TransferHelper.safeTransfer(config.platform_token, config.lable_address, drawNumber / 100 * 5);
+        TransferHelper.safeTransfer(config.platform_token, _inviter, drawNumber / 100 * 5);
+        _mint(msg.sender, _number*10**18, _number);
         emit draw(msg.sender, _number);
+    }
+
+    function ResetRatio(uint256 _ratio) onlyOwner public {
+        ratio = _ratio;
+        emit reset_ratio(_ratio);
     }
 
     function mintKey(address sender,uint256 number)external onlyFlip{
@@ -198,6 +210,11 @@ contract BlindBox is ERC20PermitUpgradeable {
         return series_ids;
     }
 
+    function QueryRatio() view public returns (uint256 ,uint256){
+        return (1*10**18/DEFAUL_DECIMAL_PLACES*ratio
+                ,10*10**18/DEFAUL_DECIMAL_PLACES*ratio);
+    }
+    
     function QueryDraws(uint256 _series_id) public view returns (uint256[] memory){
         return box_info[_series_id].draw;
     }

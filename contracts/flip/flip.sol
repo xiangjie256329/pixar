@@ -58,7 +58,7 @@ contract flip {
         WrappedToken platform_token = WrappedToken(config.platform_token);
 
         uint256 amount = platform_token.allowance(msg.sender,address(this));
-        require(amount >= value,"BlindBox Err:amount cannot than allowance");
+        require(amount >= value,"flip Err:amount cannot than allowance");
 
         TransferHelper.safeTransferFrom(config.platform_token,msg.sender,address(this),value);
 

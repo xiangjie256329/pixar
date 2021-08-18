@@ -18,10 +18,9 @@ contract nft is ERC721 {
     mapping (uint256 => uint256) private _gradeSymbol;       
     mapping (uint256 => uint256) private _tokenGradeId;     
 
-    mapping (address => uint256[]) public _addrAllTokenId; 
+    mapping (address => uint256[]) private _addrAllTokenId; 
     mapping (uint256 => uint256) private _tokenToIndex;    
 
-    int public lastgainloss; 
     string public lastresult;
     uint public lastblocknumberused; 
     bytes32 public lastblockhashused;
@@ -49,6 +48,7 @@ contract nft is ERC721 {
         _;
     }
 
+    event initLog(address addrOne, address addrTwo, address addrThree);
     function init(address blindBox,address flip, address lock_contract) public  {
         require(msg.sender == config.owner, "Nft Err: Unauthoruzed");
         require(config.blindBox == address(0) &&
@@ -58,6 +58,13 @@ contract nft is ERC721 {
         config.flip = flip;
         config.lockContract = lock_contract;
         config.blindBox = blindBox;
+        emit initLog(blindBox, flip, lock_contract);
+    }
+
+    function queryConfig() public view returns(address  blindBox, address flip, address lockContract){
+        blindBox = config.blindBox;
+        flip = config.flip;
+        lockContract = config.lockContract;
     }
 
     function Draw(address to, uint256 number, uint256 IsDCard, uint256 _seriesId, uint256[] memory _drawPr,
@@ -175,7 +182,8 @@ contract nft is ERC721 {
         return uint256(keccak256(abi.encodePacked(block.difficulty, block.coinbase, now, lastblockhashused, wager)));
     }
 
-    function drawCard(address to, uint256 tokenId, uint256 _seriesId, uint256 _pecision,uint256[] memory _drawPr,uint256[] memory _gradeNumber) public returns(uint){
+    function drawCard(address to, uint256 tokenId, uint256 _seriesId, uint256 _pecision,
+    uint256[] memory _drawPr,uint256[] memory _gradeNumber) public returns(uint){
         uint128 wager = uint128(tokenId);           
         lastblocknumberused = block.number - 1 ;
         lastblockhashused = blockhash(lastblocknumberused);
@@ -186,47 +194,34 @@ contract nft is ERC721 {
 
         if( rand <= _drawPr[0])
             {
-                _tokenSerialNumber[tokenId] = _seriesId;
-                _tokenGrade[tokenId] = "S";
-                _gradeSymbol[tokenId] = 1;
-
-                if (_gradeNumber[1] == 1){
-                    _tokenGradeId[tokenId] = 1;
-                    _tokenTypeNumber[tokenId] = "S1";
-                }else {
-                    uint256 randId = hashymchasherton % _gradeNumber[0];
-                    _tokenGradeId[tokenId] = randId + 1;
-                    _tokenTypeNumber[tokenId] = strConcat("S", toString(randId+1));
-                }
-
+                addAttribute(tokenId, _seriesId, "S", 1, _gradeNumber[0], hashymchasherton);
             }else if ( rand <= _drawPr[0] + _drawPr[1])
-            {
-                _tokenSerialNumber[tokenId] = _seriesId;
-                _tokenGrade[tokenId] = "A";
-                _gradeSymbol[tokenId] = 2;
-
-                uint256 randId = hashymchasherton % _gradeNumber[1] + 1;
-                _tokenGradeId[tokenId] = randId;
-                _tokenTypeNumber[tokenId] = strConcat("A", toString(randId));
+            {   
+                addAttribute(tokenId, _seriesId, "A", 2, _gradeNumber[1], hashymchasherton);
             }else if ( rand <= _drawPr[0] +_drawPr[1] + _drawPr[2])
-            {
-                _tokenSerialNumber[tokenId] = _seriesId;
-                _tokenGrade[tokenId] = "B";
-                _gradeSymbol[tokenId] = 3;
-
-                uint256 randId = hashymchasherton % _gradeNumber[2] + 1;
-                _tokenGradeId[tokenId] = randId;
-                _tokenTypeNumber[tokenId] = strConcat("B", toString(randId));
+            {   
+                addAttribute(tokenId, _seriesId, "B", 3, _gradeNumber[2], hashymchasherton);
             }else {
-                _tokenSerialNumber[tokenId] = _seriesId;
-                _tokenGrade[tokenId] = "C";
-                _gradeSymbol[tokenId] = 4;
-
-                uint256 randId = hashymchasherton % _gradeNumber[3] + 1;
-                _tokenGradeId[tokenId] = randId;
-                _tokenTypeNumber[tokenId] = strConcat("C", toString(randId));
+                addAttribute(tokenId, _seriesId, "C", 4, _gradeNumber[3], hashymchasherton);
             }
             emit DrawCard(to, tokenId, _tokenSerialNumber[tokenId], _tokenTypeNumber[tokenId]);     
+    }
+
+    function addAttribute(uint256 tokenId,uint256 seriesId, string memory tokenGrade, uint256 gradeSymbol,
+    uint256 gradeNumber,uint256 hashymchasherton) private
+    {
+                _tokenSerialNumber[tokenId] = seriesId;
+                _tokenGrade[tokenId] = tokenGrade;
+                _gradeSymbol[tokenId] = gradeSymbol;
+                
+                if (gradeNumber == 1){
+                    _tokenGradeId[tokenId] = 1;
+                    _tokenTypeNumber[tokenId] = strConcat(tokenGrade, "1");
+                }else {
+                    uint256 randId = hashymchasherton % gradeNumber + 1;
+                    _tokenGradeId[tokenId] = randId;
+                    _tokenTypeNumber[tokenId] = strConcat(tokenGrade, toString(randId));
+                }
     }
 
     function drawCardForD(address to, uint256 tokenId, uint256 _seriesId,uint256[] memory _gradeNumber) public {
@@ -235,15 +230,8 @@ contract nft is ERC721 {
         lastblockhashused = blockhash(lastblocknumberused);
         uint128 lastblockhashused_uint = uint128(uint(lastblockhashused)) + wager;
         uint256 hashymchasherton = sha(lastblockhashused_uint);
-    
-        _tokenSerialNumber[tokenId] = _seriesId;
-        _tokenGrade[tokenId] = "D";
-        _gradeSymbol[tokenId] = 5;
 
-        uint256 randId = hashymchasherton % _gradeNumber[4] + 1;
-        _tokenGradeId[tokenId] = randId;
-        _tokenTypeNumber[tokenId] = strConcat("D", toString(randId));
-
+        addAttribute(tokenId, _seriesId, "D", 5, _gradeNumber[4], hashymchasherton);
         emit DrawCardForD(to, tokenId, _tokenSerialNumber[tokenId],_tokenTypeNumber[tokenId]);
     }
 
@@ -279,7 +267,7 @@ contract nft is ERC721 {
 
     function getNftInfo(uint256 tokenId) public view returns(uint256 tSerialNumber,
       string memory tTypeNumber, string memory tGrade, uint256  tGradeId){
-        require(exists(tokenId),"Tokenid does not exist");
+        // require(exists(tokenId),"Tokenid does not exist");
         tSerialNumber = _tokenSerialNumber[tokenId];
         tTypeNumber = _tokenTypeNumber[tokenId];
         tGrade = _tokenGrade[tokenId];
@@ -296,22 +284,25 @@ contract nft is ERC721 {
 
     event gradeComposelog(string res, uint256 tokenId, uint256 tokenSerialNumber, string tokenTypeNumber);
 
-    function gradeCompose(address user, uint256 _seriesId,uint256[] memory _composePrs, uint256[] memory _gradeNumbers,
+    function gradeCompose(address user, uint256 seriesId,uint256[] memory _composePrs, uint256[] memory gradeNumbers,
     uint256 _grade,uint256[] memory tokenIds,string memory image) authentication public 
     {   
+        address _user = user;
         uint256 _pecision = 100000;
+        uint256 _seriesId = seriesId; 
         uint256 grade = _grade;
+        uint256[] memory _gradeNumbers = gradeNumbers;
 
         require(tokenIds.length == 5, '[]tokenIds quantity not five');
 
         require(
                   checkSeriesId(_seriesId,_tokenSerialNumber[tokenIds[0]], _tokenSerialNumber[tokenIds[1]], 
-                  _tokenSerialNumber[tokenIds[2]], _tokenSerialNumber[tokenIds[3]], _tokenSerialNumber[4]),
+                  _tokenSerialNumber[tokenIds[2]], _tokenSerialNumber[tokenIds[3]], _tokenSerialNumber[tokenIds[4]]),
                   'Not all the five nft belonging to the same series'
           );
 
         require(
-                  checkNftOwner(user, tokenIds[0], tokenIds[1], tokenIds[2], tokenIds[3], tokenIds[4]),
+                  checkNftOwner(_user, tokenIds[0], tokenIds[1], tokenIds[2], tokenIds[3], tokenIds[4]),
                   'Not all the five nft belong to this address'
           );
 
@@ -321,11 +312,11 @@ contract nft is ERC721 {
                   'The grades of the five nft are different'
         );
         
-        burn(user,tokenIds[0]);
-        burn(user,tokenIds[1]);
-        burn(user,tokenIds[2]);
-        burn(user,tokenIds[3]);
-        burn(user,tokenIds[4]);
+        burn(_user,tokenIds[0]);
+        burn(_user,tokenIds[1]);
+        burn(_user,tokenIds[2]);
+        burn(_user,tokenIds[3]);
+        burn(_user,tokenIds[4]);
 
         uint128 wager = uint128(1);             
         lastblocknumberused = block.number - 1 ;
@@ -335,92 +326,47 @@ contract nft is ERC721 {
         uint256 rand = hashymchasherton % _pecision;
         
         uint256 ltId = lastTokenId;
-        _safeMint(user, lastTokenId);
+        _safeMint(_user, lastTokenId);
 
         string memory res;
         if ( rand < _composePrs[grade-2])
         {
             res = "win";
             if( grade == 2)
+            {   
+                addAttribute(ltId, _seriesId, "S", 1, _gradeNumbers[0], hashymchasherton);
+            }
+            else if ( grade == 3 )
+            {   
+                addAttribute(ltId, _seriesId, "A", 2, _gradeNumbers[1], hashymchasherton);
+            }
+            else if ( grade == 4 )
+            {   
+                addAttribute(ltId, _seriesId, "B", 3, _gradeNumbers[2], hashymchasherton);
+            }
+            else 
             {
-                _tokenSerialNumber[ltId] = _seriesId;
-                _tokenGrade[ltId] = "S";
-                _gradeSymbol[ltId] = 1;
-
-                if (_gradeNumbers[0] == 1){
-                    _tokenGradeId[ltId] = 1;
-                    _tokenTypeNumber[ltId] = "S1";
-                }else {
-                    uint256 randId = hashymchasherton % _gradeNumbers[0];
-                    _tokenGradeId[ltId] = randId + 1;
-                    _tokenTypeNumber[ltId] = strConcat("S", toString(randId+1));
-                }
-            }else if ( grade == 3 )
+                addAttribute(ltId, _seriesId, "C", 4, _gradeNumbers[3], hashymchasherton);
+            }
+        }
+        else
+        {
+            res = "loss";
+            if( grade == 2)
+            {       
+                addAttribute(ltId, _seriesId, "A", 2, _gradeNumbers[1], hashymchasherton);
+            }
+            else if ( grade == 3 )
+            {   
+                addAttribute(ltId, _seriesId, "B", 3, _gradeNumbers[2], hashymchasherton);
+            }
+            else if ( grade == 4 )
             {
-                _tokenSerialNumber[ltId] = _seriesId;
-                _tokenGrade[ltId] = "A";
-                _gradeSymbol[ltId] = 2;
-
-                uint256 randId = hashymchasherton % _gradeNumbers[1] + 1;
-                _tokenGradeId[ltId] = randId;
-                _tokenTypeNumber[ltId] = strConcat("A", toString(randId));
-
-            }else if ( grade == 4 )
+                addAttribute(ltId, _seriesId, "C", 4, _gradeNumbers[3], hashymchasherton);
+            }
+            else
             {
-                _tokenSerialNumber[ltId] = _seriesId;
-                _tokenGrade[ltId] = "B";
-                _gradeSymbol[ltId] = 3;
-
-                uint256 randId = hashymchasherton % _gradeNumbers[2] + 1;
-                _tokenGradeId[ltId] = randId;
-                _tokenTypeNumber[ltId] = strConcat("B", toString(randId));
-            }else {
-                _tokenSerialNumber[ltId] = _seriesId;
-                _tokenGrade[ltId] = "C";
-                _gradeSymbol[ltId] = 4;
-
-                uint256 randId = hashymchasherton % _gradeNumbers[3] + 1;
-                _tokenGradeId[ltId] = randId;
-                _tokenTypeNumber[ltId] = strConcat("C", toString(randId));
-                }
-            }else{
-                res = "loss";
-                if( grade == 2)
-                {
-                    _tokenSerialNumber[ltId] = _seriesId;
-                    _tokenGrade[ltId] = "A";
-                    _gradeSymbol[ltId] = 2;
-
-                    uint256 randId = hashymchasherton % _gradeNumbers[1] + 1;
-                    _tokenGradeId[ltId] = randId;
-                    _tokenTypeNumber[ltId] = strConcat("A", toString(randId));
-                }else if ( grade == 3 )
-                {
-                    _tokenSerialNumber[ltId] = _seriesId;
-                    _tokenGrade[ltId] = "B";
-                    _gradeSymbol[ltId] = 3;
-
-                    uint256 randId = hashymchasherton % _gradeNumbers[2] + 1;
-                    _tokenGradeId[ltId] = randId;
-                    _tokenTypeNumber[ltId] = strConcat("B", toString(randId));
-
-                }else if ( grade == 4 )
-                {
-                    _tokenSerialNumber[ltId] = _seriesId;
-                    _tokenGrade[ltId] = "C";
-                    _gradeSymbol[ltId] = 4;
-
-                    uint256 randId = hashymchasherton % _gradeNumbers[3] + 1;
-                    _tokenGradeId[ltId] = randId;
-                    _tokenTypeNumber[ltId] = strConcat("C", toString(randId));
-                }else {
-                    _tokenSerialNumber[ltId] = _seriesId;
-                    _tokenGrade[ltId] = "D";
-                    _gradeSymbol[ltId] = 5;
-
-                    uint256 randId = hashymchasherton % _gradeNumbers[4] + 1;
-                    _tokenGradeId[ltId] = randId;
-                    _tokenTypeNumber[ltId] = strConcat("D", toString(randId));
+                addAttribute(ltId, _seriesId, "D", 5, _gradeNumbers[4], hashymchasherton);
             }
         }
         emit gradeComposelog(res, ltId, _tokenSerialNumber[ltId], _tokenTypeNumber[ltId]);  
@@ -473,6 +419,7 @@ contract nft is ERC721 {
         for (uint256 i = 0; i < _addrAllTokenId[user].length; ){             
             if (_tokenSerialNumber[_addrAllTokenId[user][i]] != _seriesId)
             {
+                i++;
                 continue; 
             }
 
@@ -533,4 +480,61 @@ contract nft is ERC721 {
             return false;
             }
     }
+
+    function getAddrSeriesTokenIds(address _user, uint256 _seriesId, uint256 _pageSize, uint256 _page) public view 
+    returns(uint256[] memory result) 
+    {   
+        address user = _user;
+        uint256 total =  _addrAllTokenId[user].length;
+        require( _pageSize * (_page - 1)  < total, "Error: No more NFT");
+        
+        uint256 pageSize = _pageSize;
+        uint256 page = _page;
+        if (pageSize > max_page) {
+            pageSize = max_page;
+        }
+
+        uint256 start_index = (page - 1) * pageSize;
+        uint256 end_index;
+
+        if ( total-start_index <  pageSize)
+        {
+            end_index = total; 
+        }
+        else           
+        {
+            end_index = start_index + pageSize; 
+        }
+
+        result = new uint256[](pageSize);
+
+        uint256 j = 0 ;
+        for (uint256 i = start_index; i < end_index ; i++ ){
+            if (_tokenSerialNumber[_addrAllTokenId[user][i]] == _seriesId){
+                result[j] = getAddrTokenId(user,i);
+                j++;
+            }else{
+                if (end_index < total){
+                    end_index++;
+                }
+            }
+        }
+        return result;
+    }
+
+    function getAddrTokenNumberForSeries(address _user, uint256 _seriesId) public view returns(uint256)
+    {
+        uint256 len = _addrAllTokenId[_user].length;
+        uint256 num = 0;
+        for (uint256 i = 0; i < len ; i ++){
+            if (_tokenSerialNumber[_addrAllTokenId[_user][i]] == _seriesId){
+                num++;
+            }
+        }
+        return num;
+    }
+
+    // function setUrI(uint256 _token_id)public {
+    //      ERC721._setTokenURI(_token_id, "https://www.bakeryswap.org/api/v1/artworks/98b49d130b6c4a83bf18c0280be8649b");
+    //  }
 }

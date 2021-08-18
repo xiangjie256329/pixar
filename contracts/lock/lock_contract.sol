@@ -111,9 +111,9 @@ contract Lock {
         lastRewardNFTId = 10000000;
     }
 
-    function RewardToken() external nonReentrant {
+    function RewardToken(uint256 amount) external nonReentrant {
         updateReward(address(0), currentIdx);
-        uint256 amount = config.platform_token.allowance(msg.sender, address(this));
+        // uint256 amount = config.platform_token.allowance(msg.sender, address(this));
         require(amount > 0, "Lock: RewardToken wrong asset");
         TransferHelper.safeTransferFrom(address(config.platform_token), msg.sender, address(this), amount);
 
@@ -129,9 +129,9 @@ contract Lock {
         emit rewardToken(amount);
     }
 
-    function Stake() external nonReentrant {
+    function Stake(uint256 amount) external nonReentrant {
         updateReward(msg.sender, currentIdx);
-        uint256 amount = config.platform_token.allowance(msg.sender, address(this));
+        // uint256 amount = config.platform_token.allowance(msg.sender, address(this));
         require(amount > 0, "Lock: stake Cannot stake 0");
 
         Balances storage bal = balances[msg.sender];

@@ -11,10 +11,11 @@ contract PrizePool is ERC20PermitUpgradeable{
     event swapErc20(address,uint256);
 
     struct Config{
-        address owner;
+        address build_box_address;
         address platform_token;
         address panacke_router;
         address ether_address;
+        address gov_address;
     }
 
     uint256 constant TwoMinute = 1200;
@@ -22,28 +23,29 @@ contract PrizePool is ERC20PermitUpgradeable{
 
     Config public config;
 
-    constructor(address _owner,
+    constructor(address _build_box_address,
                 address _platform_token,
                 address _panacke_router,
                 address _ether_address,
-                uint256 _min_ether)public{
+                uint256 _min_ether,
+                address _gov_address)public{
         config = Config(
-                        _owner,
+                        _build_box_address,
                         _platform_token,
                         _panacke_router,
-                        _ether_address
+                        _ether_address,
+                        _gov_address
                         );
         min_reward[_ether_address] = _min_ether*10**18;
     }
 
     mapping(address => uint256) public min_reward;
 
-    function ResetMinReward(address token,uint256 amount) onlyOwner public{
+    function ResetMinReward(address token,uint256 amount) onlyGover public{
         min_reward[token] = amount;
     }
 
     function SwapErc20(address _token,uint256 _account)
-        onlyOwner
         onlyReward(_token)
         checkMinReward(_token)
         public{
@@ -60,7 +62,6 @@ contract PrizePool is ERC20PermitUpgradeable{
     }
 
     function SwapEthers(uint256 _account)
-        onlyOwner
         onlyReward(config.ether_address)
         checkMinReward(config.ether_address)
         public{
@@ -78,7 +79,7 @@ contract PrizePool is ERC20PermitUpgradeable{
 
     receive() external payable {}
 
-    function sender(address payable to,address token,uint256 amount) onlyOwner external{
+    function sender(address payable to,address token,uint256 amount) onlyBuildBox external{
         if (token == address(0)){
             to.transfer(amount);
         }else{
@@ -86,7 +87,7 @@ contract PrizePool is ERC20PermitUpgradeable{
         }
         emit send_log(to,token,amount);
     }
-    
+
     function QueryConfig() view public returns (Config memory){
         return config;
     }
@@ -111,8 +112,13 @@ contract PrizePool is ERC20PermitUpgradeable{
         _;
     }
 
-    modifier onlyOwner{
-        require(config.owner == msg.sender,"PrizePool Err: Unauthoruzed");
+    modifier onlyBuildBox{
+        require(config.build_box_address == msg.sender,"PrizePool Err: Unauthoruzed");
+        _;
+    }
+
+    modifier onlyGover{
+        require(config.gov_address == msg.sender,"PrizePool Err: Unauthoruzed");
         _;
     }
 
