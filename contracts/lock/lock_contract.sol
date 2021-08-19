@@ -16,7 +16,7 @@ contract Lock {
     uint256 private constant _NOT_ENTERED = 1;
     uint256 private constant _ENTERED = 2;
 
-    uint256 public constant ONE_NFT_REWARD_AMOUNT = 100 * (10**18);
+    uint256 public constant ONE_NFT_REWARD_AMOUNT = 1000 * (10**18);
 
     uint256 public constant MAX_NFT_REWARD = 20;
 
@@ -161,8 +161,7 @@ contract Lock {
                      block.coinbase, now, blockhash(block.number-1), i))) % seriesIds.length;
 
                 config.nft_token.Draw(msg.sender, 1, 0, seriesIds[randSeridId],
-                config.blind_box.QueryDraws(seriesIds[randSeridId]),config.blind_box.QueryLevels(seriesIds[randSeridId]),
-                config.blind_box.QueryImage(seriesIds[randSeridId]));
+                                      config.blind_box.QueryDraws(seriesIds[randSeridId]),config.blind_box.QueryLevels(seriesIds[randSeridId]));
              }
         }
         emit staked(msg.sender, amount);

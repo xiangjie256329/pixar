@@ -6,6 +6,8 @@ import "../TransferHelper.sol";
 import "../blindBox/BlindBox.sol";
 import "../prizePool/PrizePool.sol";
 import "../blindBox/BuildToken.sol";
+import "../staking/staking.sol";
+
 contract Gov {
     using SafeMath for uint256;
 
@@ -222,11 +224,16 @@ contract Gov {
                             _proposal_deposit);
     }
 
-    function Init(address  _prize_pool_addr,address _blindbox_addr,BuildToken.ControlledTokenConfig memory _token,address _filp)public{
+    function Init(address  _prize_pool_addr,
+                  address _blindbox_addr,
+                  address _platform_lp,
+                  address _staking_addr)public{
         require(msg.sender == config.owner,"Gov Err: unauthorized");
         config.prizepool = _prize_pool_addr;
         config.blindbox = _blindbox_addr;
-        BlindBox(payable(_blindbox_addr)).init(_token,_filp,_prize_pool_addr);
+        //BlindBox(payable(_blindbox_addr)).init(_token,_filp,_prize_pool_addr);
+        //feat: init staking register platform-usdt lp token pool
+        Staking(_staking_addr).registerPlatformAsset(config.platform_token,_platform_lp);
     }
 
     function CreatePoll(uint256 _deposit_amount, string memory _title,

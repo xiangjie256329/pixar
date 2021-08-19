@@ -27,8 +27,9 @@ contract PrizePool is ERC20PermitUpgradeable{
                 address _platform_token,
                 address _panacke_router,
                 address _ether_address,
-                uint256 _min_ether,
-                address _gov_address)public{
+                uint256 _min_cake_reward,
+                address _gov_address,
+                address _cake_address)public{
         config = Config(
                         _build_box_address,
                         _platform_token,
@@ -36,7 +37,8 @@ contract PrizePool is ERC20PermitUpgradeable{
                         _ether_address,
                         _gov_address
                         );
-        min_reward[_ether_address] = _min_ether*10**18;
+        //min_reward[_ether_address] = _min_ether*10**18;
+        min_reward[_cake_address] = _min_cake_reward*10**18;
     }
 
     mapping(address => uint256) public min_reward;
@@ -45,7 +47,7 @@ contract PrizePool is ERC20PermitUpgradeable{
         min_reward[token] = amount;
     }
 
-    function SwapErc20(address _token,uint256 _account)
+    function SwapErc20(address _token,uint256 _account,address[] memory _path)
         onlyReward(_token)
         checkMinReward(_token)
         public{
@@ -53,15 +55,15 @@ contract PrizePool is ERC20PermitUpgradeable{
         uint amount = WrappedToken(config.platform_token).balanceOf(address(this));
         require(amount >= _account,"PrizePool Err:platform not enough");
         WrappedToken(config.platform_token).approve(config.panacke_router,_account);
-        address[] memory path = new address[](2);
-        path[0]=config.platform_token;
-        path[1]=_token;
+        //address[] memory path = new address[](2);
+        //path[0]=config.platform_token;
+        //path[1]=_token;
         uint256 deadline = now+TwoMinute;
-        IPancakeRouter01(config.panacke_router).swapExactTokensForTokens(_account,Zero,path,address(this),deadline);
+        IPancakeRouter01(config.panacke_router).swapExactTokensForTokens(_account,Zero,_path,address(this),deadline);
         emit swapErc20(_token,_account);
     }
 
-    function SwapEthers(uint256 _account)
+    function SwapEthers(uint256 _account,address[] memory _path)
         onlyReward(config.ether_address)
         checkMinReward(config.ether_address)
         public{
@@ -69,11 +71,11 @@ contract PrizePool is ERC20PermitUpgradeable{
         uint amount = WrappedToken(config.platform_token).balanceOf(address(this));
         require(amount >= _account,"PrizePool Err:platform not enough");
         WrappedToken(config.platform_token).approve(config.panacke_router,_account);
-        address[] memory path = new address[](2);
-        path[0] = config.platform_token;
-        path[1] = config.ether_address;
+        //address[] memory path = new address[](2);
+        //path[0] = config.platform_token;
+        //path[1] = config.ether_address;
         uint256 deadline = now+TwoMinute;
-        IPancakeRouter01(config.panacke_router).swapExactTokensForETH(_account,Zero,path,address(this),deadline);
+        IPancakeRouter01(config.panacke_router).swapExactTokensForETH(_account,Zero,_path,address(this),deadline);
         emit swapEthers(_account);
     }
 

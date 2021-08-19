@@ -68,7 +68,7 @@ contract nft is ERC721 {
     }
 
     function Draw(address to, uint256 number, uint256 IsDCard, uint256 _seriesId, uint256[] memory _drawPr,
-    uint256[] memory _gradeNumber,string memory image)  authentication public
+    uint256[] memory _gradeNumber)  authentication public
     {
         uint256 _pecision = _drawPr[0] + _drawPr[1] +_drawPr[2] +_drawPr[3];
         for (uint256 i = 0; i < number; i++) {
@@ -98,7 +98,7 @@ contract nft is ERC721 {
     returns(uint256[] memory result) 
     {   
         uint256 total =  _addrAllTokenId[_user].length;
-        require( _pageSize * (_page - 1)  < total, "Error: No more NFT");
+        require( _pageSize * (_page - 1)  < total, "Nft Err: No more NFT");
         
         uint256 pageSize = _pageSize;
         uint256 page = _page;
@@ -156,7 +156,7 @@ contract nft is ERC721 {
     }
 
     function burn(address user, uint256 tokenId) public { 
-        require(user == ownerOf(tokenId), 'tokenId no belong to user');
+        require(user == ownerOf(tokenId), 'Nft Err: tokenId no belong to user');
 
         delete _tokenSerialNumber[tokenId];
         delete _tokenGrade[tokenId];
@@ -267,7 +267,7 @@ contract nft is ERC721 {
 
     function getNftInfo(uint256 tokenId) public view returns(uint256 tSerialNumber,
       string memory tTypeNumber, string memory tGrade, uint256  tGradeId){
-        // require(exists(tokenId),"Tokenid does not exist");
+        require(exists(tokenId),"Tokenid does not exist");
         tSerialNumber = _tokenSerialNumber[tokenId];
         tTypeNumber = _tokenTypeNumber[tokenId];
         tGrade = _tokenGrade[tokenId];
@@ -285,7 +285,7 @@ contract nft is ERC721 {
     event gradeComposelog(string res, uint256 tokenId, uint256 tokenSerialNumber, string tokenTypeNumber);
 
     function gradeCompose(address user, uint256 seriesId,uint256[] memory _composePrs, uint256[] memory gradeNumbers,
-    uint256 _grade,uint256[] memory tokenIds,string memory image) authentication public 
+    uint256 _grade,uint256[] memory tokenIds) authentication public 
     {   
         address _user = user;
         uint256 _pecision = 100000;
@@ -293,23 +293,23 @@ contract nft is ERC721 {
         uint256 grade = _grade;
         uint256[] memory _gradeNumbers = gradeNumbers;
 
-        require(tokenIds.length == 5, '[]tokenIds quantity not five');
+        require(tokenIds.length == 5, 'Nft Err: []tokenIds quantity not five');
 
         require(
                   checkSeriesId(_seriesId,_tokenSerialNumber[tokenIds[0]], _tokenSerialNumber[tokenIds[1]], 
                   _tokenSerialNumber[tokenIds[2]], _tokenSerialNumber[tokenIds[3]], _tokenSerialNumber[tokenIds[4]]),
-                  'Not all the five nft belonging to the same series'
+                  'Nft Err: Not all the five nft belonging to the same series'
           );
 
         require(
                   checkNftOwner(_user, tokenIds[0], tokenIds[1], tokenIds[2], tokenIds[3], tokenIds[4]),
-                  'Not all the five nft belong to this address'
+                  'Nft Err: Not all the five nft belong to this address'
           );
 
         require(  
                   checkNftGrade(grade,_gradeSymbol[tokenIds[0]], _gradeSymbol[tokenIds[1]], _gradeSymbol[tokenIds[2]],
                    _gradeSymbol[tokenIds[3]], _gradeSymbol[tokenIds[4]]),
-                  'The grades of the five nft are different'
+                  'Nft Err: The grades of the five nft are different'
         );
         
         burn(_user,tokenIds[0]);
@@ -404,7 +404,65 @@ contract nft is ERC721 {
         }
     }
 
-    event cashCheckLog(string res, address _user, uint256 seriesId);
+    event cashCheckByTokenIdLog(uint256 _seriesId);
+    function cashCheckByTokenID(address _user,uint256 _seriesId,uint256[] memory _gradeNumbers, 
+    uint256[] memory _tokenIds) authentication  public 
+    {   
+        uint256 cardNumber = _gradeNumbers[0] +_gradeNumbers[1] +_gradeNumbers[2] +_gradeNumbers[3] +_gradeNumbers[4];
+        require(cardNumber == _tokenIds.length, 'Nft Err: Insufficient number of NFTs');
+
+        address  user = _user;
+        uint128 S_res = 0;
+        uint128 A_res = 0;
+        uint128 B_res = 0;
+        uint128 C_res = 0;
+        uint128 D_res = 0;
+
+        uint128 start;
+        for (uint256 i = 0; i < _tokenIds.length; i++){
+            string  memory existLog = strConcat(toString(_tokenIds[i]), " Tokenid does not exist");
+            require( exists(_tokenIds[i]), existLog);
+            require(_tokenSerialNumber[_tokenIds[i]] == _seriesId, 'Nft Err: Not all nft belonging to the same series');
+
+            if (_gradeSymbol[_tokenIds[i]] == 1){
+                start = S_res;
+            }else if (_gradeSymbol[_tokenIds[i]] == 2) {
+                start = A_res;
+            }else if (_gradeSymbol[_tokenIds[i]] == 3) {
+                start = B_res;
+            }else if (_gradeSymbol[_tokenIds[i]] == 4) {
+                start = C_res;
+            }else {
+                start = D_res;
+            }
+
+            if (start & (1 << (_tokenGradeId[_tokenIds[i]] - 1)) == 0 ){
+                start = uint128(start | 1 << (_tokenGradeId[_tokenIds[i]] - 1));
+                if (_gradeSymbol[_tokenIds[i]] == 1){
+                    S_res = start ;
+                }else if (_gradeSymbol[_tokenIds[i]] == 2) {
+                    A_res = start;
+                }else if (_gradeSymbol[_tokenIds[i]] == 3) {
+                    B_res = start;
+                }else if (_gradeSymbol[_tokenIds[i]] == 4) {
+                    C_res = start;
+                }else {
+                    D_res = start;
+                }
+                burn(user, _tokenIds[i]);
+            }
+        }
+
+        uint256[] memory gradeNumbers_ = _gradeNumbers;
+        require( 
+                checkRet(reckon(gradeNumbers_[0]),S_res,reckon(gradeNumbers_[1]),A_res,reckon(gradeNumbers_[2]),
+                B_res,reckon(gradeNumbers_[3]),C_res,reckon(gradeNumbers_[4]),D_res), 
+                'Error: failed, Please confirm that all are collected'
+        );
+        emit cashCheckByTokenIdLog(_seriesId);
+    }
+
+    
     function cashCheck(address _user,uint256 _seriesId,uint256[] memory _gradeNumbers) authentication  public 
     {
         address  user = _user;
@@ -458,7 +516,7 @@ contract nft is ERC721 {
         require( 
                     checkRet(reckon(gradeNumbers_[0]),S_res,reckon(gradeNumbers_[1]),A_res,reckon(gradeNumbers_[2]),
                     B_res,reckon(gradeNumbers_[3]),C_res,reckon(gradeNumbers_[4]),D_res), 
-                    'Error: failed, Please confirm that all are collected'
+                    'Nft Err: failed, Please confirm that all are collected'
             );
     }
 
@@ -486,7 +544,7 @@ contract nft is ERC721 {
     {   
         address user = _user;
         uint256 total =  _addrAllTokenId[user].length;
-        require( _pageSize * (_page - 1)  < total, "Error: No more NFT");
+        require( _pageSize * (_page - 1)  < total, "Nft Err: No more NFT");
         
         uint256 pageSize = _pageSize;
         uint256 page = _page;

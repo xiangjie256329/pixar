@@ -26,6 +26,7 @@ contract Staking{
        config.platform_token = _platform_token;
        config.staker_donate = _staker_donate;
        distribute.amount = _distrbiute_amount;
+       distribute.last = now;
    }
 
    struct PoolInfo{
@@ -66,13 +67,18 @@ contract Staking{
    struct Distribute{
        uint256 last;
        uint256 amount;
-       address usdt_platform_lptoken;
+       //address usdt_platform_lptoken;
+   }
+
+
+   function QueryDistribute() public view returns (Distribute memory){
+       return distribute;
    }
 
    event distribute_log(uint256,uint256);
 
    function Distributer() public {
-       require(distribute.last + DISTRIBUTION_INTERVAL > now,"Staking: Distribute Cannot distribute platform token before interval");
+       require(distribute.last + DISTRIBUTION_INTERVAL < now,"Staking: Distribute Cannot distribute platform token before interval");
        uint256 time_elapsed = now.sub(distribute.last);
        uint256 lp_lens = lp_list.length;
        uint256 amount = time_elapsed.mul(distribute.amount).div(lp_lens);
@@ -111,7 +117,7 @@ contract Staking{
        emit update_config_log(_owner);
    }
 
-   function RegisterPlatformAsset(address _platform_token,address _lp_token)public {
+   function registerPlatformAsset(address _platform_token,address _lp_token)public{
        require(config.owner == msg.sender,"Staking: RegisterAsset Unauthoruzed");
        require(lp_poolInfo[_lp_token].staking_token == address(0),"Staking: Platform Asset was already registered");
        require(unregister_platform_asset,"Staking: Can only call once");
@@ -119,7 +125,7 @@ contract Staking{
        lp_poolInfo[_lp_token].asset_token = _platform_token;
        lp_poolInfo[_lp_token].staking_token = _lp_token;
        unregister_platform_asset = false;
-       distribute.usdt_platform_lptoken = _platform_token;
+       //distribute.usdt_platform_lptoken = _platform_token;
        lp_list.push(_lp_token);
        emit register_platform_asset_log(_lp_token);
    }

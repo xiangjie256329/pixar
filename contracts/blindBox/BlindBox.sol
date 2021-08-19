@@ -74,7 +74,7 @@ contract BlindBox is ERC20PermitUpgradeable {
         config = Config(_owner, _lableAddress,platform_token,address(0),address(0),address(0),_nft);
     }
 
-    function init(BuildToken.ControlledTokenConfig calldata _config,address _flip,address  _prize_pool)onlyOwner external {
+    function init(BuildToken.ControlledTokenConfig memory _config,address _flip,address  _prize_pool)onlyOwner public {
         require(_flip != address(0) &&
                 config.flip == address(0) &&
                 config.key_token == address(0),
@@ -93,7 +93,6 @@ contract BlindBox is ERC20PermitUpgradeable {
         series_ids.push(_box.series_id);
         emit mint_box(_box.series_id, _box.name);
     }
-
 
     //ptoken - > k token ratio default 2 decimal places
     uint256 ratio = 10000;
@@ -136,7 +135,7 @@ contract BlindBox is ERC20PermitUpgradeable {
         uint256 amount = key_token.allowance(msg.sender, address(this));
         require(amount == _number * 10 ** 18, "BlindBox Err:amount cannot than allowance");
         Box storage box = box_info[_series_id];
-        nft(config.nft).Draw(msg.sender,_number,1,_series_id,box.draw,box.level,box.image);
+        nft(config.nft).Draw(msg.sender,_number,1,_series_id,box.draw,box.level);
         ControlledToken(config.key_token).controllerBurn(msg.sender,amount);
         emit draw_out(msg.sender, _series_id, _number);
     }
@@ -147,12 +146,12 @@ contract BlindBox is ERC20PermitUpgradeable {
         checkTokenIdLens(_series_id,_tokens_id)
         public {
         Box storage box = box_info[_series_id];
-        nft(config.nft).gradeCompose(msg.sender,_series_id,box.mix,box.level,_grade_id,_tokens_id,box.image);
+        nft(config.nft).gradeCompose(msg.sender,_series_id,box.mix,box.level,_grade_id,_tokens_id);
     }
 
-    function Convert(uint256 _series_id)
+    function Convert(uint256 _series_id,uint256[] memory _token_ids)
         onlyBox(_series_id) public {
-        nft(config.nft).cashCheck(msg.sender,_series_id,box_info[_series_id].level);
+        nft(config.nft).cashCheckByTokenID(msg.sender,_series_id,box_info[_series_id].level,_token_ids);
         _sendReward(_series_id);
     }
 
@@ -168,11 +167,10 @@ contract BlindBox is ERC20PermitUpgradeable {
         }
     }
 
-    function ResetLevel(uint256 _series_id, uint256[] memory _level)
-        onlyOwner
-        onlyBox(_series_id) public {
-        box_info[_series_id].level = _level;
-        emit resetLevel(_series_id, _level);
+    event resetOwner(address);
+    function ResetOwner(address _owner) onlyOwner public{
+        config.owner = _owner;
+        emit resetOwner(_owner);
     }
 
     function ResetDraw(uint256 _series_id, uint256[] memory _draw)
@@ -214,7 +212,7 @@ contract BlindBox is ERC20PermitUpgradeable {
         return (1*10**18/DEFAUL_DECIMAL_PLACES*ratio
                 ,10*10**18/DEFAUL_DECIMAL_PLACES*ratio);
     }
-    
+
     function QueryDraws(uint256 _series_id) public view returns (uint256[] memory){
         return box_info[_series_id].draw;
     }

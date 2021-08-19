@@ -12,6 +12,4 @@ contract ('Mint',async accounts =>{
         console.log(config);
 
     });
-
-
 });

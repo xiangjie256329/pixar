@@ -86,9 +86,8 @@ contract flip {
             {
                 uint256[] memory seriesIds = config.blind_box.QuerySeriesIds();
                 uint256 randSeridId = hashymchasherton % seriesIds.length;
-                config.nft_token.Draw(msg.sender, 1, 0, seriesIds[randSeridId], 
-                config.blind_box.QueryDraws(seriesIds[randSeridId]),config.blind_box.QueryLevels(seriesIds[randSeridId]),
-                 config.blind_box.QueryImage(seriesIds[randSeridId]));
+                config.nft_token.Draw(msg.sender, 1, 0, seriesIds[randSeridId],
+                config.blind_box.QueryDraws(seriesIds[randSeridId]),config.blind_box.QueryLevels(seriesIds[randSeridId]));
             }else if (value == 100*10**18)
             {
                 config.blind_box.mintKey(msg.sender,1);
@@ -117,4 +116,3 @@ contract flip {
     }
 
 }
-
