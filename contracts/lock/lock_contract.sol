@@ -29,8 +29,8 @@ contract Lock {
     mapping(address => mapping(uint256 => uint256)) public rewards;
     mapping(address => RewardBalance[]) public userRewards;
 
-    mapping(address => Balances) balances;
-    mapping(address => LockedBalance[]) userLocks;
+    mapping(address => Balances) public balances;
+    mapping(address => LockedBalance[]) public userLocks;
 
     uint256 public totalRewardAmount;
     uint256 public totalCollateralAmount;
@@ -170,10 +170,8 @@ contract Lock {
     function GetReward(uint256 _start, uint256 _end) public nonReentrant{
         require(_start < _end, "GetReward: arg1 must less than arg2");
         LockedBalance[] storage locks = userLocks[msg.sender];
-        if (locks.length < _end) {
-            _end = locks.length;
-        }
-        for (uint256 i = _start; i < _end; i++) {
+        uint256 length = locks.length;
+        for (uint256 i = 0; i < length; i++) {
             uint256 idx = locks[i].idx;
             updateReward(msg.sender, idx);
         }
@@ -181,17 +179,18 @@ contract Lock {
         RewardBalance[] storage userReward = userRewards[msg.sender];
         mapping(uint256 => uint256) storage bal = rewards[msg.sender];
         uint256 amount = 0;
-        if (userReward.length == 0) {
+        length = userReward.length;
+        if (length == 0) {
             return;
         }
-        uint256 i = _start;
-        for (; i < _end; i++) {
+        uint256 i = 0;
+        for (; i < length; i++) {
             uint256 idx = userReward[i].idx;
             amount = amount.add(userReward[i].amount);
             delete userReward[i];
             delete bal[idx];
         }
-        if (_start == 0 && i == userReward.length) {
+        if (i == length) {
             delete userRewards[msg.sender];
         }
         totalDistributeAmount = totalDistributeAmount.add(amount);
@@ -208,7 +207,10 @@ contract Lock {
         if (locks.length < _end) {
             _end = locks.length;
         }
-        require(length > 0, "Lock: WithdrawExpiredLocks is 0");
+        if (length == 0) {
+            return;
+        }
+        // require(length > 0, "Lock: WithdrawExpiredLocks is 0");
         uint256 idx = locks[length-1].idx;
         uint256 unlockTime = rewardData[idx].lockFinish;
         if (_start == 0 && length == locks.length && unlockTime <= block.timestamp) {
@@ -230,7 +232,10 @@ contract Lock {
                 delete bal.stakeAmount[idx];
             }
         }
-        require(amount > 0, "Lock: WithdrawExpiredLocks is 0");
+        if (amount == 0) {
+            return;
+        }
+        // require(amount > 0, "Lock: WithdrawExpiredLocks is 0");
         totalWithdrawCollateralAmount = totalWithdrawCollateralAmount.add(amount);
         TransferHelper.safeTransfer(address(config.platform_token), msg.sender, amount);
     }

@@ -462,64 +462,6 @@ contract nft is ERC721 {
         emit cashCheckByTokenIdLog(_seriesId);
     }
 
-    
-    function cashCheck(address _user,uint256 _seriesId,uint256[] memory _gradeNumbers) authentication  public 
-    {
-        address  user = _user;
-        uint128 S_res = 0;
-        uint128 A_res = 0;
-        uint128 B_res = 0;
-        uint128 C_res = 0;
-        uint128 D_res = 0;
-
-        uint128 start;
-
-        for (uint256 i = 0; i < _addrAllTokenId[user].length; ){             
-            if (_tokenSerialNumber[_addrAllTokenId[user][i]] != _seriesId)
-            {
-                i++;
-                continue; 
-            }
-
-            if (_gradeSymbol[_addrAllTokenId[user][i]] == 1){
-                start = S_res;
-            }else if (_gradeSymbol[_addrAllTokenId[user][i]] == 2) {
-                start = A_res;
-            }else if (_gradeSymbol[_addrAllTokenId[user][i]] == 3) {
-                start = B_res;
-            }else if (_gradeSymbol[_addrAllTokenId[user][i]] == 4) {
-                start = C_res;
-            }else {
-                start = D_res;
-            }
-
-            if (start & (1 << (_tokenGradeId[_addrAllTokenId[user][i]] - 1)) == 0 ){
-                start = uint128(start | 1 << (_tokenGradeId[_addrAllTokenId[user][i]] - 1));
-                if (_gradeSymbol[_addrAllTokenId[user][i]] == 1){
-                    S_res = start ;
-                }else if (_gradeSymbol[_addrAllTokenId[user][i]] == 2) {
-                    A_res = start;
-                }else if (_gradeSymbol[_addrAllTokenId[user][i]] == 3) {
-                    B_res = start;
-                }else if (_gradeSymbol[_addrAllTokenId[user][i]] == 4) {
-                    C_res = start;
-                }else {
-                    D_res = start;
-                }
-                burn(user, _addrAllTokenId[user][i]);
-            } else {
-                i++;
-            }
-        }
-
-        uint256[] memory gradeNumbers_ = _gradeNumbers;
-        require( 
-                    checkRet(reckon(gradeNumbers_[0]),S_res,reckon(gradeNumbers_[1]),A_res,reckon(gradeNumbers_[2]),
-                    B_res,reckon(gradeNumbers_[3]),C_res,reckon(gradeNumbers_[4]),D_res), 
-                    'Nft Err: failed, Please confirm that all are collected'
-            );
-    }
-
     function reckon(uint256 num) public pure returns(uint128 res){
         res = 0;
         uint128 c = 1;

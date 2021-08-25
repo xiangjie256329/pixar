@@ -17,7 +17,7 @@ contract BlindBox is ERC20PermitUpgradeable {
     using SafeMath for uint256;
     event mint_box(uint256, string);
     event draw_out(address, uint256, uint256);
-    event draw(address, uint256);
+    event draw(address, uint256,address,uint256);
     event mix_true(address, uint256, uint256, bool);
     event resetDraw(uint256 ,uint256[]);
     event resetMix(uint256 _series_id, uint256[]);
@@ -111,7 +111,7 @@ contract BlindBox is ERC20PermitUpgradeable {
         TransferHelper.safeTransfer(config.platform_token, config.lable_address, drawNumber / 100 * 5);
         TransferHelper.safeTransfer(config.platform_token, _inviter, drawNumber / 100 * 5);
         _mint(msg.sender, _number*10**18, _number);
-        emit draw(msg.sender, _number);
+        emit draw(msg.sender, _number,_inviter,drawNumber);
     }
 
     function ResetRatio(uint256 _ratio) onlyOwner public {

@@ -4,7 +4,8 @@ const provider = getDefaultProvider(
   "https://data-seed-prebsc-1-s1.binance.org:8545/"
 );
 let private_key =
-  "0x6271102e8b770eea39b241054fb793fb94a22c24ab949af01c9c661d53445ccc";
+  // "0x6271102e8b770eea39b241054fb793fb94a22c24ab949af01c9c661d53445ccc";
+  "19b7f26c0f14c102bdcbb01cfd7607f6d5d92482d5b1eedc103d83a550af9dc3";
 let private_key_new =
   "0x6271102e8b770eea39b241054fb793fb94a22c24ab949af01c9c661d53445ccc";
 const wallet = new Wallet(private_key, provider);
@@ -12,7 +13,7 @@ const wallet_new = new Wallet(private_key_new, provider);
 
 let json = require("../../build/contracts/Lock.json");
 const abi = json.abi;
-const contractAddr = "0xadEbfd5C61d5E5b07B9bBA1d4B74B1A52b133d73";
+const contractAddr = "0x8395e2cddb5457a4a70bd240da2fb6be55285dbe";
 const contractHandler = new Contract(contractAddr, abi, wallet);
 const contractHandler_new = new Contract(contractAddr, abi, wallet_new);
 
@@ -74,27 +75,6 @@ async function Test_QueryConfig() {
   try {
     console.log("----------- Test_QueryConfig start -----------");
     let config = await contractHandler.QueryConfig();
-    // console.log("owner:", config.owner)
-    console.log("platform_token(平台通证合约地址):", config.platform_token);
-    console.log(
-      "periodDuration(周期时间长度，同一个周期内的奖励会放到同一个奖金池):",
-      config.periodDuration
-    );
-    console.log("rewardsDuration(奖励时间长度):", config.rewardsDuration);
-    console.log("lockDuration(锁仓时间长度):", config.lockDuration);
-    // console.log("periodNumber:", config.periodNumber)
-    // console.log("donate:", config.donate)
-    console.log("✓---------- Test_QueryConfig end   -----------");
-  } catch (e) {
-    console.log("❌================ Test_QueryConfig ====================");
-    console.log(e.message);
-  }
-}
-
-async function Test_QueryConfig() {
-  try {
-    console.log("----------- Test_QueryConfig start -----------");
-    let config = await contractHandler.QueryConfig();
     console.log("owner:", config.owner);
     console.log("platform_token:", config.platform_token);
     console.log(
@@ -128,7 +108,7 @@ async function Test_rewardData() {
 async function Test_ClaimableRewards() {
   try {
     console.log("----------- ClaimableRewards start -----------");
-    let account = "0x9768c749d17EC7F7C3a2efA368920BcE3a02166c";
+    let account = "0x44f03800aa2776c6c08ebfe07eb0c0ba89174fbd";
     let ret = await contractHandler.ClaimableRewards(account);
     console.log("Total Awards:", ret.total);
     for (let i = 0; i < ret.claRewards.length; i++) {
@@ -146,7 +126,7 @@ async function Test_ClaimableRewards() {
 async function Test_GetStakeAmounts() {
   try {
     console.log("----------- GetStakeAmounts start -----------");
-    let account = "0x9768c749d17EC7F7C3a2efA368920BcE3a02166c";
+    let account = "0x44f03800aa2776c6c08ebfe07eb0c0ba89174fbd";
     let ret = await contractHandler.GetStakeAmounts(account);
     console.log("Total mortgage:", ret.total);
     console.log("Desirable mortgage:", ret.unlockable);
@@ -178,9 +158,45 @@ async function Test_LockToken() {
   try {
     let ret = await contractHandler.Stake({ gasLimit: GasLimit });
     console.log(ret);
-    console.log("✓---------- Test_RewardToken end   -----------");
+    console.log("✓---------- Test_LockToken end   -----------");
   } catch (e) {
-    console.log("❌================ Test_RewardToken ====================");
+    console.log("❌================ Test_LockToken ====================");
+    console.log(e.message);
+  }
+}
+
+async function Test_GetReward() {
+  try {
+    console.log("----------- GetReward start -----------");
+    let account = "0x44f03800aa2776c6c08ebfe07eb0c0ba89174fbd";
+    let ret = await contractHandler.GetReward(0, 100);
+    console.log("✓---------- GetReward end   -----------", ret);
+  } catch (e) {
+    console.log("❌================ GetStakeAmounts ====================");
+    console.log(e.message);
+  }
+}
+
+async function Test_WithdrawExpiredLocks() {
+  try {
+    console.log("----------- Test_WithdrawExpiredLocks start -----------");
+    let account = "0x44f03800aa2776c6c08ebfe07eb0c0ba89174fbd";
+    let ret = await contractHandler.WithdrawExpiredLocks(0, 100);
+    console.log("✓---------- Test_WithdrawExpiredLocks end   -----------", ret);
+  } catch (e) {
+    console.log("❌================ GTest_WithdrawExpiredLocks ====================");
+    console.log(e.message);
+  }
+}
+
+async function Test_userRewards() {
+  try {
+    console.log("----------- Test_userRewards start -----------");
+    let account = "0x44f03800aa2776c6c08ebfe07eb0c0ba89174fbd";
+    let ret = await contractHandler.userRewards(account, 1);
+    console.log("✓---------- Test_userRewards end   -----------", ret);
+  } catch (e) {
+    console.log("❌================ Test_userRewards ====================");
     console.log(e.message);
   }
 }
@@ -188,13 +204,16 @@ async function Test_LockToken() {
 async function main() {
   console.log("contractAddr:", contractAddr);
   // await Test_QueryConfig();
-  // await Test_ClaimableRewards();
+  // await Test_ClaimableRewards()
   // await Test_GetStakeAmounts();
+  // await Test_GetReward();
+  // await Test_WithdrawExpiredLocks();
   // await Test_rewardData()
   // await aprovePlatform(1000n * Unit);
   // await aproveUsdt(100n * Unit);
-  await Test_LockToken();
+  // await Test_LockToken();
   // await Test_RewardToken();
+  await Test_userRewards()
 }
 
 main().catch((err) => {
