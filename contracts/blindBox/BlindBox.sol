@@ -9,7 +9,6 @@ import "../token/ControlledToken.sol";
 import "../token/WrappedToken.sol";
 import "../prizePool/PrizePool.sol";
 import "../nft/nft.sol";
-import "../flip/flip.sol";
 import "@openzeppelin/contracts-upgradeable/drafts/ERC20PermitUpgradeable.sol";
 
 
@@ -82,7 +81,6 @@ contract BlindBox is ERC20PermitUpgradeable {
         ControlledToken token = _createToken(_config.name, _config.symbol, _config.decimals, _config.controller);
         config.key_token = address(token);
         config.flip = _flip;
-        flip(_flip).init(config.key_token);
         config.prize_pool = payable(_prize_pool);
     }
 
@@ -95,9 +93,9 @@ contract BlindBox is ERC20PermitUpgradeable {
     }
 
     //ptoken - > k token ratio default 2 decimal places
-    uint256 ratio = 10000;
-    function Draw(uint256 _number, address _inviter) public
-    onlynumberof(_number)
+    uint256 ratio = 1000;
+    function Draw(uint256 _number, address _inviter)
+        onlynumberofDraw(_number) public
     {
         //keytoken(_number) * ratio = ptoken
         uint256 drawNumber = _number * 10 ** 18 / DEFAUL_DECIMAL_PLACES * ratio;
@@ -106,8 +104,8 @@ contract BlindBox is ERC20PermitUpgradeable {
         uint256 amount = platform_token.allowance(msg.sender, address(this));
         require(amount >= drawNumber , "BlindBox Err:amount cannot than allowance");
         TransferHelper.safeTransferFrom(config.platform_token, msg.sender, address(this), drawNumber);
-        platform_token.burn(drawNumber/2, msg.sender);
-        TransferHelper.safeTransfer(config.platform_token, config.prize_pool, drawNumber / 10 * 4);
+        platform_token.burn(drawNumber/10, msg.sender);
+        TransferHelper.safeTransfer(config.platform_token, config.prize_pool, drawNumber / 10 * 8);
         TransferHelper.safeTransfer(config.platform_token, config.lable_address, drawNumber / 100 * 5);
         TransferHelper.safeTransfer(config.platform_token, _inviter, drawNumber / 100 * 5);
         _mint(msg.sender, _number*10**18, _number);
@@ -119,7 +117,7 @@ contract BlindBox is ERC20PermitUpgradeable {
         emit reset_ratio(_ratio);
     }
 
-    function mintKey(address sender,uint256 number)external onlyFlip{
+    function mintKey(address sender,uint256 number) onlyFlip external{
         if (number == 1){
             _mint(sender, 1*10**18, 1);
         }else{
@@ -127,9 +125,9 @@ contract BlindBox is ERC20PermitUpgradeable {
         }
     }
 
-    function DrawOut(uint256 _series_id, uint256 _number) public
-    onlyBox(_series_id)
-    onlynumberof(_number)
+    function DrawOut(uint256 _series_id, uint256 _number)
+        onlyBox(_series_id)
+        onlynumberofDrawOut(_number) public
     {
         WrappedToken key_token = WrappedToken(config.key_token);
         uint256 amount = key_token.allowance(msg.sender, address(this));
@@ -276,8 +274,13 @@ contract BlindBox is ERC20PermitUpgradeable {
         _;
     }
 
-    modifier onlynumberof(uint256 _number){
+    modifier onlynumberofDraw(uint256 _number){
         require(_number == 1 || _number == 10, "BlindBox Err:draw number can only be equal to 1 or 10");
+        _;
+    }
+
+    modifier onlynumberofDrawOut(uint256 _number){
+        require(_number == 1 || _number == 11, "BlindBox Err:draw number can only be equal to 1 or 11");
         _;
     }
 

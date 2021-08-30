@@ -3,9 +3,6 @@ pragma experimental ABIEncoderV2;
 
 import "../token/WrappedToken.sol";
 import "../TransferHelper.sol";
-import "../blindBox/BlindBox.sol";
-import "../prizePool/PrizePool.sol";
-import "../blindBox/BuildToken.sol";
 import "../staking/staking.sol";
 
 contract Gov {
@@ -19,9 +16,7 @@ contract Gov {
     uint256 public constant MAX_DESC_LENGTH = 256;
     uint256 public constant MIN_LINK_LENGTH = 12;
     uint256 public constant MAX_LINK_LENGTH = 128;
-
     uint256 public constant MAX_USER_VOTER_NUMBER = 20;
-
     uint256 public constant MAX_LIMIT = 30;
     Config public config;
     State public state;
@@ -148,9 +143,9 @@ contract Gov {
 
     event create_poll(address _creator, uint256 _poll_id, uint256 _end_height);
     event update_config(address _owner, address _platform_token, uint256 _quorum,
-                uint256 _threshold, uint256 _voting_period,
-                uint256 _effective_delay, uint256 _expiration_period,
-                uint256 _proposal_deposit);
+        uint256 _threshold, uint256 _voting_period,
+        uint256 _effective_delay, uint256 _expiration_period,
+        uint256 _proposal_deposit);
     event stake_voting_token(address _user, uint256 _amount);
     event withdraw_voting_tokens(address _user, uint256 _amount);
     event cast_vote(address _user, uint256 _poll_id, VoteOption vote, uint256 _amount);
@@ -191,10 +186,10 @@ contract Gov {
 
 
     constructor(address _owner, address _platform_token, uint256 _quorum,
-                uint256 _threshold, uint256 _voting_period,
-                uint256 _effective_delay, uint256 _expiration_period,
-                uint256 _proposal_deposit) public
-                assertPercent(_quorum) assertPercent(_threshold) {
+        uint256 _threshold, uint256 _voting_period,
+        uint256 _effective_delay, uint256 _expiration_period,
+        uint256 _proposal_deposit) public
+    assertPercent(_quorum) assertPercent(_threshold) {
         config.owner = _owner;
         config.platform_token = _platform_token;
         config.quorum = _quorum;
@@ -204,12 +199,11 @@ contract Gov {
         config.expiration_period = _expiration_period;
         config.proposal_deposit = _proposal_deposit;
     }
-
     function UpdateConfig(address _owner, address _platform_token, uint256 _quorum,
-                uint256 _threshold, uint256 _voting_period,
-                uint256 _effective_delay, uint256 _expiration_period,
-                uint256 _proposal_deposit
-        ) external assertPercent(_quorum) assertPercent(_threshold) {
+        uint256 _threshold, uint256 _voting_period,
+        uint256 _effective_delay, uint256 _expiration_period,
+        uint256 _proposal_deposit
+    ) external assertPercent(_quorum) assertPercent(_threshold) {
         require(config.owner == msg.sender, "Gov UpdateConfig: unauthorized");
         config.owner = _owner;
         config.platform_token = _platform_token;
@@ -220,14 +214,14 @@ contract Gov {
         config.expiration_period = _expiration_period;
         config.proposal_deposit = _proposal_deposit;
         emit update_config(_owner, _platform_token, _quorum, _threshold,
-                           _voting_period, _effective_delay, _expiration_period,
-                            _proposal_deposit);
+            _voting_period, _effective_delay, _expiration_period,
+            _proposal_deposit);
     }
 
     function Init(address  _prize_pool_addr,
-                  address _blindbox_addr,
-                  address _platform_lp,
-                  address _staking_addr)public{
+        address _blindbox_addr,
+        address _platform_lp,
+        address _staking_addr)public{
         require(msg.sender == config.owner,"Gov Err: unauthorized");
         config.prizepool = _prize_pool_addr;
         config.blindbox = _blindbox_addr;
@@ -237,16 +231,16 @@ contract Gov {
     }
 
     function CreatePoll(uint256 _deposit_amount, string memory _title,
-                        string memory _description, string memory _link, address _target,
-                        string memory _selector, bytes memory _data
-        ) public {
+        string memory _description, string memory _link, address _target,
+        string memory _selector, bytes memory _data
+    ) public {
         assertTitle(_title);
         assertDesc(_description);
         assertLink(_link);
         require(_deposit_amount >= config.proposal_deposit,
-                "Gov CreatePoll: Must deposit more than proposal token");
+            "Gov CreatePoll: Must deposit more than proposal token");
         TransferHelper.safeTransferFrom(config.platform_token, msg.sender,
-                                        address(this), _deposit_amount);
+            address(this), _deposit_amount);
         state.poll_count += 1;
         state.total_deposit += _deposit_amount;
 
@@ -270,7 +264,7 @@ contract Gov {
 
         _polls_itmap_insert_or_update( poll_id, poll);
         emit create_poll(msg.sender, poll_id, block.number +
-                         config.voting_period);
+            config.voting_period);
     }
 
     function StakeVotingTokens(uint256 _amount) public {
@@ -282,9 +276,9 @@ contract Gov {
         TokenManager storage token_manager = _banks_itmap_value_get(msg.sender);
         WrappedToken wrappedToken = WrappedToken(config.platform_token);
         uint256 total_balance = wrappedToken.balanceOf(address(this)) -
-            state.total_deposit;
+        state.total_deposit;
         TransferHelper.safeTransferFrom(config.platform_token, msg.sender,
-                                        address(this), _amount);
+            address(this), _amount);
         uint256 share = 0;
         if (total_balance == 0 || state.total_share == 0) {
             share = _amount;
@@ -319,17 +313,17 @@ contract Gov {
         require(_poll_id > 0 && state.poll_count >= _poll_id, "Gov CastVote: Poll does not exist");
         Poll storage a_poll = _polls_itmap_value_get(_poll_id);
         require(a_poll.status == PollStatus.InProgress && block.number <
-            a_poll.end_height, "Gov CastVote: Poll is not in progress");
+        a_poll.end_height, "Gov CastVote: Poll is not in progress");
         require(_banks_itmap_contains(msg.sender), "Gov CastVote: User does not have enough staked tokens.");
         TokenManager storage token_manager = _banks_itmap_value_get(msg.sender);
         require(token_manager.locked_balance[_poll_id].balance == 0, "Gov CastVote: User has already voted.");
         _update_token_manager(token_manager);
         require(token_manager.participated_polls.length < MAX_USER_VOTER_NUMBER,
-               "Gov CastVote: User voted exceed MAX_USER_VOTER_NUMBER");
+            "Gov CastVote: User voted exceed MAX_USER_VOTER_NUMBER");
         WrappedToken wrappedToken = WrappedToken(config.platform_token);
         uint256 total_balance = wrappedToken.balanceOf(address(this)) - state.total_deposit;
         require(token_manager.share * total_balance / state.total_share >= _amount,
-                "Gov CastVote: User does not have enough staked tokens.");
+            "Gov CastVote: User does not have enough staked tokens.");
         if (vote == VoteOption.Yes) {
             a_poll.yes_votes += _amount;
         } else {
@@ -417,6 +411,21 @@ contract Gov {
         _poll.status = PollStatus.Expired;
         emit expire_log(_poll_id);
     }
+    function _locked_balance(TokenManager storage _token_manager) internal returns (uint256) {
+        if (_token_manager.participated_polls.length == 0) {
+            return 0;
+        }
+        uint256 max_poll_id = _token_manager.participated_polls[_token_manager.maxIdx];
+        if (polls.data[max_poll_id].value.status == PollStatus.InProgress) {
+            return _token_manager.locked_balance[max_poll_id].balance;
+        }
+        _update_token_manager(_token_manager);
+        if (_token_manager.participated_polls.length == 0) {
+            return 0;
+        }
+        max_poll_id = _token_manager.participated_polls[_token_manager.maxIdx];
+        return _token_manager.locked_balance[max_poll_id].balance;
+    }
 
     function QueryConfig() external view returns (Config memory) {
         return config;
@@ -434,8 +443,8 @@ contract Gov {
         uint256 total_balance = wrappedToken.balanceOf(address(this)) - state.total_deposit;
         TokenManager storage token_manager = _banks_itmap_value_get(user);
         staker.share = token_manager.share;
-	staker.maxIdx = token_manager.maxIdx;
-	staker.balance = staker.share * total_balance / state.total_share;
+        staker.maxIdx = token_manager.maxIdx;
+        staker.balance = staker.share * total_balance / state.total_share;
         staker.locked_balance = new voteResp[](token_manager.participated_polls.length);
         for (uint256 i = 0; i < token_manager.participated_polls.length; i++) {
             uint256 poll_id = token_manager.participated_polls[i];
@@ -454,7 +463,7 @@ contract Gov {
     }
 
     function QueryPolls(PollStatus fileter, uint256 _start_after, uint256 _limit, bool _isAsc)
-        external view returns (Poll[] memory poll, uint256 len) {
+    external view returns (Poll[] memory poll, uint256 len) {
         if (_limit == 0) {
             return (poll , len);
         }
@@ -513,64 +522,54 @@ contract Gov {
     }
 
     function QueryVoters(uint256 poll_id, uint256 _start, uint256 _limit, bool _isAsc)
-        external view returns (VoterManager memory vote, uint256 len) {
+    external view returns (
+        address[] memory user,
+        uint256[] memory balance,
+        uint[] memory opts,
+        uint256) {
+        uint256 len ;
         if (_limit == 0) {
-            return (vote , len);
+            return (user,balance,opts,len);
         }
         uint256 limit = _limit;
         if (limit > MAX_LIMIT) {
             limit = MAX_LIMIT;
         }
-        vote.user = new address[](limit);
-	vote.vote = new VoteOption[](limit);
-        vote.balance = new uint256[](limit);
-	if (!_voters_itmap_contains(poll_id) ) {
-	    return (vote , len);
-	}
-	VoterManager storage value = _voters_itmap_value_get(poll_id);
+        user = new address[](limit);
+        opts = new uint[](limit);
+        balance = new uint256[](limit);
+        if (!_voters_itmap_contains(poll_id) ) {
+            return (user,balance,opts,len);
+        }
+        VoterManager storage value = _voters_itmap_value_get(poll_id);
         len = 0;
         if (_start != 0) {
             if (value.user.length <= _start) {
-                return (vote , len);
+                return (user,balance,opts,len);
             }
         }
         if (_isAsc) {
             for ( uint256 i = _start; (i < value.user.length) && (len < limit); i++) {
-                vote.user[len] = value.user[i];
-                vote.vote[len] = value.vote[i];
-                vote.balance[len] = value.balance[i];
-		len++;
+                user[len] = value.user[i];
+                opts[len] = uint(value.vote[i]);
+                balance[len] = value.balance[i];
+                len++;
             }
+            return (user,balance,opts,len);
         } else {
             if (_start == 0) {
                 _start = value.user.length - 1;
             }
             for (int256 i = int256(_start); (i >= 0 ) && (len < limit); i--) {
-		uint256 index = uint256(i);
-                vote.user[len] = value.user[index];
-                vote.vote[len] = value.vote[index];
-                vote.balance[len] = value.balance[index];
-		len++;
+                uint256 index = uint256(i);
+                user[len] = value.user[index];
+                opts[len] = uint(value.vote[index]);
+                balance[len] = value.balance[index];
+                len++;
             }
+            return (user,balance,opts,len);
         }
     }
-
-    function _locked_balance(TokenManager storage _token_manager) internal returns (uint256) {
-        if (_token_manager.participated_polls.length == 0) {
-            return 0;
-        }
-        uint256 max_poll_id = _token_manager.participated_polls[_token_manager.maxIdx];
-        if (polls.data[max_poll_id].value.status == PollStatus.InProgress) {
-            return _token_manager.locked_balance[max_poll_id].balance;
-        }
-        _update_token_manager(_token_manager);
-        if (_token_manager.participated_polls.length == 0) {
-            return 0;
-        }
-        max_poll_id = _token_manager.participated_polls[_token_manager.maxIdx];
-        return _token_manager.locked_balance[max_poll_id].balance;
-    }
-
     function _update_token_manager(TokenManager storage _token_manager) internal returns (uint256) {
         _token_manager.maxIdx = 0;
         uint256 max_balance = 0;
@@ -585,7 +584,7 @@ contract Gov {
                 }
                 uint256 tmp = _token_manager.participated_polls[i];
                 _token_manager.participated_polls[i] =
-                    _token_manager.participated_polls[length - remove_poll_cnt];
+                _token_manager.participated_polls[length - remove_poll_cnt];
                 _token_manager.participated_polls[length - remove_poll_cnt] = tmp;
 
                 poll_id = _token_manager.participated_polls[i];

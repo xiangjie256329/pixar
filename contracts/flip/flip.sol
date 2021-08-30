@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.5;
 
 import "../token/WrappedToken.sol";
-import "../blindBox/BuildToken.sol";
-import "../blindBox/BlindBox.sol";
 import "../TransferHelper.sol";
 import "../token/ControlledToken.sol";
 import "../nft/nft.sol";
+import "../blindBox/BlindBox.sol";
 
 contract flip {
     struct Config{
-        address owner;
+        address owner;  
         address lable_address;
         address platform_token;
         address key_token;
@@ -34,7 +33,7 @@ contract flip {
         lastresult = "no wagers yet";
     }
 
-    function init(address _key_token) external {
+    function init(address _key_token) public {
         //require( msg.sender == config.owner, "Flip Err:unauthorized");
         require(config.key_token == address(0),"Flip Err:Can not be re-initialized");
         config.key_token = _key_token;

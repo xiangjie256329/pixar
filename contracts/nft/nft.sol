@@ -267,7 +267,6 @@ contract nft is ERC721 {
 
     function getNftInfo(uint256 tokenId) public view returns(uint256 tSerialNumber,
       string memory tTypeNumber, string memory tGrade, uint256  tGradeId){
-        require(exists(tokenId),"Tokenid does not exist");
         tSerialNumber = _tokenSerialNumber[tokenId];
         tTypeNumber = _tokenTypeNumber[tokenId];
         tGrade = _tokenGrade[tokenId];
@@ -534,7 +533,12 @@ contract nft is ERC721 {
         return num;
     }
 
-    // function setUrI(uint256 _token_id)public {
-    //      ERC721._setTokenURI(_token_id, "https://www.bakeryswap.org/api/v1/artworks/98b49d130b6c4a83bf18c0280be8649b");
-    //  }
+    function transferArray(address from, address to, uint256[] memory tokenIds) public virtual{
+        uint256 len = tokenIds.length;
+        require( len > 0,'Nft Err: TokenID is Null');
+        for (uint256 i = 0; i < len ; i ++){
+            require(exists(tokenIds[i]),"Nft Err: Tokenid does not exist");
+            transferFrom(from, to, tokenIds[i]);
+        }
+    }
 }
