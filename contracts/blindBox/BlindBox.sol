@@ -104,8 +104,8 @@ contract BlindBox is ERC20PermitUpgradeable {
         uint256 amount = platform_token.allowance(msg.sender, address(this));
         require(amount >= drawNumber , "BlindBox Err:amount cannot than allowance");
         TransferHelper.safeTransferFrom(config.platform_token, msg.sender, address(this), drawNumber);
-        platform_token.burn(drawNumber/10, msg.sender);
-        TransferHelper.safeTransfer(config.platform_token, config.prize_pool, drawNumber / 10 * 8);
+        //platform_token.burn(drawNumber/10, msg.sender);
+        TransferHelper.safeTransfer(config.platform_token, config.prize_pool, drawNumber / 10 * 9);
         TransferHelper.safeTransfer(config.platform_token, config.lable_address, drawNumber / 100 * 5);
         TransferHelper.safeTransfer(config.platform_token, _inviter, drawNumber / 100 * 5);
         _mint(msg.sender, _number*10**18, _number);
@@ -129,12 +129,13 @@ contract BlindBox is ERC20PermitUpgradeable {
         onlyBox(_series_id)
         onlynumberofDrawOut(_number) public
     {
+        require(msg.sender == tx.origin,"BlindBox Err:request failed");
         WrappedToken key_token = WrappedToken(config.key_token);
         uint256 amount = key_token.allowance(msg.sender, address(this));
-        require(amount == _number * 10 ** 18, "BlindBox Err:amount cannot than allowance");
+        require(amount >= _number * 10 ** 18, "BlindBox Err:amount cannot than allowance");
         Box storage box = box_info[_series_id];
         nft(config.nft).Draw(msg.sender,_number,1,_series_id,box.draw,box.level);
-        ControlledToken(config.key_token).controllerBurn(msg.sender,amount);
+        ControlledToken(config.key_token).controllerBurn(msg.sender,_number * 10 ** 18);
         emit draw_out(msg.sender, _series_id, _number);
     }
 
@@ -143,6 +144,7 @@ contract BlindBox is ERC20PermitUpgradeable {
         onlyGrade(_grade_id)
         checkTokenIdLens(_series_id,_tokens_id)
         public {
+        require(msg.sender == tx.origin,"BlindBox Err:request failed");
         Box storage box = box_info[_series_id];
         nft(config.nft).gradeCompose(msg.sender,_series_id,box.mix,box.level,_grade_id,_tokens_id);
     }

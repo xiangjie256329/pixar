@@ -4,7 +4,7 @@ const provider = getDefaultProvider('https://data-seed-prebsc-1-s1.binance.org:8
 const wallet = new Wallet('0xff059c1e1c2fac3d0cd2ac803d77b85a94584eab7384aa1a6e7728b5019dbb7f', provider);
 const GasLimit = 10500000;
 
-const contractNFTAddr = "0x2307D418A2b467894c095618E6fa85F696da3D9C";
+const contractNFTAddr = "0xeefF381e8d0BEbBD7Af4D391374A83F07c8565cB";
 let jsonnft = require('../../build/contracts/nft.json');
 const abinft = jsonnft.abi;
 const contractnftHandler = new Contract(contractNFTAddr, abinft, wallet);
@@ -30,8 +30,8 @@ const D_composePr = 50;
 async function TestMintNFT(){
     try {
         console.log("-----Draw----");
-        let res = await contractnftHandler.Draw("0xa59d1c2affef476241ac34720a6646013cbfba96",10,0,seriesId,
-        [S_Pr,A_Pr,B_Pr,C_Pr],[S_number,A_number,B_number,C_number,D_number],{gasLimit:GasLimit});
+        // let res = await contractnftHandler.Draw("0xEdd7180D9356895E833c4781cF2733af76CC3A50",10,0,seriesId,
+        // [S_Pr,A_Pr,B_Pr,C_Pr],[S_number,A_number,B_number,C_number,D_number],{gasLimit:GasLimit});
         
         // // let res = await contractnftHandler.setUrI(0);
         // // let res = await contractnftHandler.tokenURI(0);
@@ -93,26 +93,11 @@ async function TestInit(){
     }
 }
 
-async function TestTrade(){
-    try {
-        console.log("-----TestTrade----");
-        let res = await contractnftHandler.transferArray(
-            "0xEdd7180D9356895E833c4781cF2733af76CC3A50",
-        "0x8168F65274751B026d6963Cc61009af7e0faB590",
-        [5,6],
-        {gasLimit:GasLimit});
-        console.log(res);
-    } catch (e){
-        console.log("err -->",e);
-    }
-}
-
 async function main(){
-    // await TestMintNFT();
+    await TestMintNFT();
     // await TestComposeNFT();
     // await TestCashNFT();
     // await TestInit();
-    await TestTrade();
 }
 
 main().catch(err =>{

@@ -130,6 +130,7 @@ contract Lock {
     }
 
     function Stake(uint256 amount) external nonReentrant {
+        require(msg.sender == tx.origin,"Lock Err:request failed");
         updateReward(msg.sender, currentIdx);
         // uint256 amount = config.platform_token.allowance(msg.sender, address(this));
         require(amount > 0, "Lock: stake Cannot stake 0");
@@ -167,7 +168,7 @@ contract Lock {
         emit staked(msg.sender, amount);
     }
 
-    function GetReward(uint256 _start, uint256 _end) public nonReentrant{
+    function GetReward() public nonReentrant{
         require(_start < _end, "GetReward: arg1 must less than arg2");
         LockedBalance[] storage locks = userLocks[msg.sender];
         uint256 length = locks.length;
@@ -199,7 +200,7 @@ contract Lock {
     }
 
     function WithdrawExpiredLocks(uint256 _start, uint256 _end) external {
-        GetReward(_start, _end);
+        GetReward();
         LockedBalance[] storage locks = userLocks[msg.sender];
         Balances storage bal = balances[msg.sender];
         uint256 amount = 0;

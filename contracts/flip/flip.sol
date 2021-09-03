@@ -13,6 +13,7 @@ contract flip {
         address lable_address;
         address platform_token;
         address key_token;
+        address prize_pool;
         nft  nft_token;
         BlindBox blind_box;
     }
@@ -23,13 +24,14 @@ contract flip {
     uint public lastblocknumberused;
     bytes32 public lastblockhashused;
 
-    constructor(address _lableAddress,address platform_token, address nft_token, address payable _blind_box) public
+    constructor(address _lableAddress,address platform_token, address nft_token, address payable _blind_box, address prize_pool) public
     {
         config.owner = msg.sender;
         config.lable_address = _lableAddress;
         config.platform_token = platform_token;
         config.nft_token = nft(nft_token);
         config.blind_box = BlindBox(_blind_box);
+        config.prize_pool = prize_pool;
         lastresult = "no wagers yet";
     }
 
@@ -50,7 +52,8 @@ contract flip {
 
     event betAndFlipLog(string);
     function betAndFlip(uint256 value, uint256 num) public
-    {
+    {   
+        require(msg.sender == tx.origin,"Flip Err:request failed");
         require(value == 10*10**18 ||value == 100*10**18 || value == 1000*10**18, "The amount should be 10 or 100 or 1000");
         require(num == 0 || num == 1, "parameter is incorrect");
 
@@ -59,11 +62,10 @@ contract flip {
         uint256 amount = platform_token.allowance(msg.sender,address(this));
         require(amount >= value,"flip Err:amount cannot than allowance");
 
-        TransferHelper.safeTransferFrom(config.platform_token,msg.sender,address(this),value);
-
-        uint256 burnAmount = value/100*95;
-        platform_token.burn(burnAmount,address(this));
-        TransferHelper.safeTransfer(config.platform_token,config.lable_address,value-burnAmount);
+        uint256 prizeAmount = value/100*95;
+        TransferHelper.safeTransferFrom(config.platform_token,msg.sender,config.prize_pool,prizeAmount);
+        
+        TransferHelper.safeTransferFrom(config.platform_token,msg.sender,config.lable_address,value-prizeAmount);
 
         uint128 wager = uint128(value);
         lastblocknumberused = block.number - 1 ;
