@@ -169,7 +169,7 @@ contract Lock {
     }
 
     function GetReward() public nonReentrant{
-        require(_start < _end, "GetReward: arg1 must less than arg2");
+        //require(_start < _end, "GetReward: arg1 must less than arg2");
         LockedBalance[] storage locks = userLocks[msg.sender];
         uint256 length = locks.length;
         for (uint256 i = 0; i < length; i++) {
