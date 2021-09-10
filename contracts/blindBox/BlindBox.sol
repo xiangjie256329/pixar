@@ -29,6 +29,7 @@ contract BlindBox is ERC20PermitUpgradeable {
     uint256 public constant MAX_IMAGE_LINK_LENGTH = 128;
     uint256 public constant MIX_TRUE_LOW_LEVEL_NUMBER = 5;
     uint256 public constant DEFAUL_DECIMAL_PLACES = 100;
+    uint256 public DrawNumber = 3;
     struct Config {
         address owner;
         address lable_address;
@@ -196,6 +197,11 @@ contract BlindBox is ERC20PermitUpgradeable {
         emit resetReward(_series_id, _reward);
     }
 
+    function ResetDrawNumber(uint256 _drawNumber)
+        onlyOwner public{
+        DrawNumber = _drawNumber;
+    }
+
     function QueryBox(uint256 _series_id) public view returns (Box memory){
         return box_info[_series_id];
     }
@@ -282,7 +288,8 @@ contract BlindBox is ERC20PermitUpgradeable {
     }
 
     modifier onlynumberofDrawOut(uint256 _number){
-        require(_number == 1 || _number == 11, "BlindBox Err:draw number can only be equal to 1 or 11");
+
+        require(_number == 1 || _number == DrawNumber, "BlindBox Err:Only draw the specified number");
         _;
     }
 

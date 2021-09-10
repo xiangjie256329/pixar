@@ -6,8 +6,9 @@ import "../TransferHelper.sol";
 import "../token/ControlledToken.sol";
 import "../nft/nft.sol";
 import "../blindBox/BlindBox.sol";
+import "@chainlink/contracts/src/v0.6/VRFConsumerBase.sol";
 
-contract flip {
+contract flip is VRFConsumerBase {
     struct Config{
         address owner;  
         address lable_address;
@@ -23,8 +24,25 @@ contract flip {
     string public lastresult;
     uint public lastblocknumberused;
     bytes32 public lastblockhashused;
-
-    constructor(address _lableAddress,address platform_token, address nft_token, address payable _blind_box, address prize_pool) public
+    
+    bytes32 internal keyHash;
+    uint256 internal fee;
+    uint256 private linkRand; 
+    
+    constructor(
+        address _lableAddress,
+        address platform_token, 
+        address nft_token, 
+        address payable _blind_box, 
+        address prize_pool,
+        address _vrfCoordinator,
+        address _linkToken,
+        bytes32 _keyHash,
+        uint256 _fee
+        )  VRFConsumerBase(
+            _vrfCoordinator, 
+            _linkToken 
+        ) public
     {
         config.owner = msg.sender;
         config.lable_address = _lableAddress;
@@ -33,21 +51,26 @@ contract flip {
         config.blind_box = BlindBox(_blind_box);
         config.prize_pool = prize_pool;
         lastresult = "no wagers yet";
+        
+        keyHash = _keyHash;
+        fee = _fee; 
     }
 
     function init(address _key_token) public {
         //require( msg.sender == config.owner, "Flip Err:unauthorized");
         require(config.key_token == address(0),"Flip Err:Can not be re-initialized");
         config.key_token = _key_token;
+        getRandomNumber();
     }
 
     function _mint(address to,uint256 amount,uint256 number)internal{
         ControlledToken(config.key_token).controllerMint(to,amount,number);
     }
 
-    function sha(uint128 wager) view private returns(uint256)
+    function sha(uint128 wager) private returns(uint256)
     {
-        return uint256(keccak256(abi.encodePacked(block.difficulty, block.coinbase, block.timestamp, lastblockhashused, wager)));
+        linkRand = linkRand + 1;
+        return uint256(keccak256(abi.encodePacked(block.difficulty, block.coinbase, block.timestamp, lastblockhashused, wager, linkRand)));
     }
 
     event betAndFlipLog(string);
@@ -116,4 +139,12 @@ contract flip {
         return lastresult;
     }
 
+    function getRandomNumber() internal returns (bytes32 requestId) {
+        require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK - fill contract with faucet");
+        return requestRandomness(keyHash, fee);
+    }
+
+    function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
+        linkRand = randomness;
+    }
 }

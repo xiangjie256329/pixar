@@ -6,13 +6,13 @@ const GasLimit = 10500000;
 
 //token
 const contractPlatformTokenAddr = "0x7b3755F969BeFd89d7057128052bbd085858C808";
-let jsonToken = require('../build/contracts/WrappedToken.json');
+let jsonToken = require('../../build/contracts/WrappedToken.json');
 const abiToken = jsonToken.abi;
 const contractPlatformTokenHandler = new Contract(contractPlatformTokenAddr, abiToken, wallet);
 
 //flip
-const flipAddr = "0x33A7026cB12b9791965127492525AC443482f7Fc";
-let flipJsonToken = require('../build/contracts/flip.json');
+const flipAddr = "0x50C95dF1cFFECD446368F85b3E764Ee564F04fa8";
+let flipJsonToken = require('../../build/contracts/flip.json');
 const flipAbiToken = flipJsonToken.abi;
 const flipHandler = new Contract(flipAddr, flipAbiToken, wallet);
 const Unit = 1000000000000000000n;
@@ -53,10 +53,21 @@ async function Test_betAndFlip(){
 
 // }
 
+async function TestInit(){
+    try {    
+        let getLinkRand = await flipHandler.getLinkRand();
+        console.log("========getLinkRand========",getLinkRand);
+        let getRandomNumber = await flipHandler.init("0xEdd7180D9356895E833c4781cF2733af76CC3A50",{gasLimit:GasLimit});
+        console.log("========res========",getRandomNumber);
+    } catch (e){
+        console.log("err -->",e);
+    }
+}
 
 async function main(){
     //await TestMintKey();
-    await Test_betAndFlip();
+    // await Test_betAndFlip();
+    await TestInit();
 }
 
 main().catch(err =>{

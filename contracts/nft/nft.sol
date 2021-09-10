@@ -2,7 +2,9 @@
 pragma solidity ^0.6.2;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-contract nft is ERC721 {
+import "@chainlink/contracts/src/v0.6/VRFConsumerBase.sol";
+
+contract nft is ERC721 ,VRFConsumerBase{
      struct Config {
         address  owner;
         address  lockContract;
@@ -26,19 +28,36 @@ contract nft is ERC721 {
     bytes32 public lastblockhashused;
     uint256 max_page;
     uint256 private lastTokenId; 
+
+    bytes32 internal keyHash;
+    uint256 internal fee;
+    uint256 private linkRand;
+    uint256 private randNumber;
     
     event DrawCard(address user, uint256 tokenId, uint256 tokenSerialNumber, string tokenTypeNumber);
     event DrawCardForD(address user, uint256 tokenId, uint256 tokenSerialNumber, string tokenTypeNumber);
     constructor (
         string memory name_, 
-        string memory symbol_
-        ) public ERC721(name_, symbol_) {
+        string memory symbol_,
+        address _vrfCoordinator,
+        address _linkToken,
+        bytes32 _keyHash,
+        uint256 _fee
+        ) VRFConsumerBase(
+            _vrfCoordinator, 
+            _linkToken 
+        )
+        public ERC721(name_, symbol_) 
+        {
         config.owner = msg.sender;
         config.lockContract = address(0);
         config.blindBox = address(0);
         config.flip = address(0);
         max_page = 50;
         lastTokenId = 0;
+
+        keyHash = _keyHash;
+        fee = _fee; 
     }
 
     modifier authentication(){
@@ -58,6 +77,7 @@ contract nft is ERC721 {
         config.flip = flip;
         config.lockContract = lock_contract;
         config.blindBox = blindBox;
+        getRandomNumber();
         emit initLog(blindBox, flip, lock_contract);
     }
 
@@ -177,13 +197,14 @@ contract nft is ERC721 {
         _burn(tokenId);
     }
     
-    function sha(uint128 wager) view private returns(uint256)
+    function sha(uint128 wager) private returns(uint256)
     {
-        return uint256(keccak256(abi.encodePacked(block.difficulty, block.coinbase, now, lastblockhashused, wager)));
+        linkRand = linkRand + randNumber;
+        return uint256(keccak256(abi.encodePacked(block.difficulty, block.coinbase, now, lastblockhashused, wager, linkRand)));
     }
 
     function drawCard(address to, uint256 tokenId, uint256 _seriesId, uint256 _pecision,
-    uint256[] memory _drawPr,uint256[] memory _gradeNumber) public returns(uint){
+    uint256[] memory _drawPr,uint256[] memory _gradeNumber) internal returns(uint){
         uint128 wager = uint128(tokenId);           
         lastblocknumberused = block.number - 1 ;
         lastblockhashused = blockhash(lastblocknumberused);
@@ -224,7 +245,7 @@ contract nft is ERC721 {
                 }
     }
 
-    function drawCardForD(address to, uint256 tokenId, uint256 _seriesId,uint256[] memory _gradeNumber) public {
+    function drawCardForD(address to, uint256 tokenId, uint256 _seriesId,uint256[] memory _gradeNumber) internal {
         uint128 wager = uint128(tokenId);           
         lastblocknumberused = block.number - 1 ;
         lastblockhashused = blockhash(lastblocknumberused);
@@ -540,5 +561,18 @@ contract nft is ERC721 {
             require(exists(tokenIds[i]),"Nft Err: Tokenid does not exist");
             transferFrom(from, to, tokenIds[i]);
         }
+    }
+    
+    function getRandomNumber() internal returns (bytes32 requestId) {
+        require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK - fill contract with faucet");
+        return requestRandomness(keyHash, fee);
+    }
+
+    function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
+        linkRand = randomness;
+    }
+
+    function initRandNumber(uint256 num) public{
+        randNumber = num;
     }
 }

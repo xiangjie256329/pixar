@@ -51,14 +51,14 @@ contract Gov {
 
     struct VoterInfo {
         address user;
-        VoteOption vote;
+        uint vote;
         uint256 balance;
     }
 
     struct Poll {
         uint256 id;
         address creator;
-        PollStatus status;
+        uint status;
         uint256 yes_votes;
         uint256 no_votes;
         uint256 end_height;
@@ -72,8 +72,17 @@ contract Gov {
         uint256 total_balance_at_end_poll;
     }
 
-    enum PollStatus { InProgress, Passed, Rejected, Executed, Expired, All }
-    enum VoteOption { Yes, No }
+        //enum PollStatus { InProgress, Passed, Rejected, Executed, Expired, All }
+        //enum VoteOption { Yes, No }
+    uint public constant InProgress = 0;
+    uint public constant Passed = 1;
+    uint public constant Rejected = 2;
+    uint public constant Executed = 3;
+    uint public constant Expired = 4;
+    uint public constant All = 5;
+
+    uint public constant Yes = 0;
+    uint public constant No = 1;
 
     struct PollItmap {
         mapping(uint256 => PollIndexValue) data;
@@ -123,7 +132,7 @@ contract Gov {
 
     struct VoterManager {
         address[] user;
-        VoteOption[] vote;
+        uint[] vote;
         uint256[] balance;
     }
 
@@ -148,7 +157,7 @@ contract Gov {
         uint256 _proposal_deposit);
     event stake_voting_token(address _user, uint256 _amount);
     event withdraw_voting_tokens(address _user, uint256 _amount);
-    event cast_vote(address _user, uint256 _poll_id, VoteOption vote, uint256 _amount);
+    event cast_vote(address _user, uint256 _poll_id, uint vote, uint256 _amount);
     event to_binary(address,uint256);
     event end_poll_log(uint256,string,bool);
     event execute_log(uint256);
@@ -249,7 +258,7 @@ contract Gov {
         Poll memory poll;
         poll.id = poll_id;
         poll.creator = msg.sender;
-        poll.status = PollStatus.InProgress;
+        poll.status = InProgress;
         poll.yes_votes = 0;
         poll.no_votes = 0;
         poll.end_height = block.number + config.voting_period;
@@ -309,10 +318,10 @@ contract Gov {
         emit withdraw_voting_tokens(msg.sender, _amount);
     }
 
-    function CastVote(uint256 _poll_id, VoteOption vote, uint256 _amount) public {
+    function CastVote(uint256 _poll_id, uint vote, uint256 _amount) public {
         require(_poll_id > 0 && state.poll_count >= _poll_id, "Gov CastVote: Poll does not exist");
         Poll storage a_poll = _polls_itmap_value_get(_poll_id);
-        require(a_poll.status == PollStatus.InProgress && block.number <
+        require(a_poll.status == InProgress && block.number <
         a_poll.end_height, "Gov CastVote: Poll is not in progress");
         require(_banks_itmap_contains(msg.sender), "Gov CastVote: User does not have enough staked tokens.");
         TokenManager storage token_manager = _banks_itmap_value_get(msg.sender);
@@ -324,7 +333,7 @@ contract Gov {
         uint256 total_balance = wrappedToken.balanceOf(address(this)) - state.total_deposit;
         require(token_manager.share * total_balance / state.total_share >= _amount,
             "Gov CastVote: User does not have enough staked tokens.");
-        if (vote == VoteOption.Yes) {
+        if (vote == Yes) {
             a_poll.yes_votes += _amount;
         } else {
             a_poll.no_votes += _amount;
@@ -344,7 +353,7 @@ contract Gov {
         if (!_voters_itmap_contains(_poll_id)) {
             VoterManager memory value;
             value.user = new address[](1);
-            value.vote = new VoteOption[](1);
+            value.vote = new uint[](1);
             value.balance = new uint256[](1);
             value.user[0] = msg.sender;
             value.vote[0] = vote;
@@ -361,7 +370,7 @@ contract Gov {
 
     function EndPoll(uint256 _poll_id) public {
         Poll storage _poll = polls.data[_poll_id].value;
-        require (_poll.status == PollStatus.InProgress,"Gov EndPoll: Poll is not in progress");
+        require (_poll.status == InProgress,"Gov EndPoll: Poll is not in progress");
         require (_poll.end_height <= block.number,"Gov EndPoll: Voting period has not expired");
 
         WrappedToken token = WrappedToken(config.platform_token);
@@ -371,13 +380,13 @@ contract Gov {
         uint256 quorum = tallied_weight.mul(10**PERCENT_PRECISION).div(staked_weight);
         bool passed = false;
         string memory rejected_reason;
-        _poll.status = PollStatus.Rejected;
+        _poll.status = Rejected;
         if (tallied_weight == 0 || quorum < config.quorum){
             rejected_reason = "Quorum not reached";
         }else{
             uint256 passratio = _poll.yes_votes.mul(10**PERCENT_PRECISION).div(tallied_weight);
             if (passratio > config.threshold){
-                _poll.status = PollStatus.Passed;
+                _poll.status = Passed;
                 passed = true;
             }else{
                 rejected_reason = "Threshold not reached";
@@ -396,19 +405,19 @@ contract Gov {
 
     function ExcutePoll(uint256 _poll_id) public {
         Poll storage _poll = polls.data[_poll_id].value;
-        require(_poll.status == PollStatus.Passed,"Gov ExcutePoll:ExcutePoll Poll is not in passed status");
+        require(_poll.status == Passed,"Gov ExcutePoll:ExcutePoll Poll is not in passed status");
         require(_poll.end_height.add(config.effective_delay) <= block.number,"Gov ExcutePoll: ExcutePoll Effective delay has not expired");
         _passCommand(_poll.target,_poll.selector,_poll.data);
-        _poll.status = PollStatus.Executed;
+        _poll.status = Executed;
         emit execute_log(_poll_id);
     }
 
     function ExpirePoll(uint256 _poll_id) public {
         Poll storage _poll = polls.data[_poll_id].value;
-        require(_poll.status == PollStatus.Passed,"Gov ExpirePoll: Poll is not in passed status");
+        require(_poll.status == Passed,"Gov ExpirePoll: Poll is not in passed status");
         require((_poll.target != address(0) && bytes(_poll.selector).length > 0),"Gov ExpirePoll: Cannot make a text proposal to expired state");
         require(_poll.end_height.add(config.expiration_period) <= block.number,"Gov ExpirePoll: Expire height has not been reached");
-        _poll.status = PollStatus.Expired;
+        _poll.status = Expired;
         emit expire_log(_poll_id);
     }
     function _locked_balance(TokenManager storage _token_manager) internal returns (uint256) {
@@ -416,7 +425,7 @@ contract Gov {
             return 0;
         }
         uint256 max_poll_id = _token_manager.participated_polls[_token_manager.maxIdx];
-        if (polls.data[max_poll_id].value.status == PollStatus.InProgress) {
+        if (polls.data[max_poll_id].value.status == InProgress) {
             return _token_manager.locked_balance[max_poll_id].balance;
         }
         _update_token_manager(_token_manager);
@@ -435,23 +444,28 @@ contract Gov {
         return state;
     }
 
-    function QueryStaker(address user) external view returns (StakerResponse memory staker) {
+    function QueryStaker(address user) external
+        view returns (
+                      voteResp[] memory lock_balance,
+                      uint256 balance ,
+                      uint256 share,
+                      uint256 maxIdx) {
         if (!_banks_itmap_contains(user) || state.total_share == 0) {
-            return staker;
+            return (lock_balance,balance,share,maxIdx);
         }
         WrappedToken wrappedToken = WrappedToken(config.platform_token);
         uint256 total_balance = wrappedToken.balanceOf(address(this)) - state.total_deposit;
         TokenManager storage token_manager = _banks_itmap_value_get(user);
-        staker.share = token_manager.share;
-        staker.maxIdx = token_manager.maxIdx;
-        staker.balance = staker.share * total_balance / state.total_share;
-        staker.locked_balance = new voteResp[](token_manager.participated_polls.length);
+        share = token_manager.share;
+        maxIdx = token_manager.maxIdx;
+        balance = share * total_balance / state.total_share;
+        lock_balance = new voteResp[](token_manager.participated_polls.length);
         for (uint256 i = 0; i < token_manager.participated_polls.length; i++) {
             uint256 poll_id = token_manager.participated_polls[i];
-            staker.locked_balance[i].value = token_manager.locked_balance[poll_id];
-            staker.locked_balance[i].poll_id = poll_id;
+            lock_balance[i].value = token_manager.locked_balance[poll_id];
+            lock_balance[i].poll_id = poll_id;
         }
-        return staker;
+        return (lock_balance,balance,share,maxIdx);
     }
 
     function QueryPoll(uint256 _poll_id) external view returns (Poll memory poll) {
@@ -462,7 +476,7 @@ contract Gov {
         return poll;
     }
 
-    function QueryPolls(PollStatus fileter, uint256 _start_after, uint256 _limit, bool _isAsc)
+    function QueryPolls(uint fileter, uint256 _start_after, uint256 _limit, bool _isAsc)
     external view returns (Poll[] memory poll, uint256 len) {
         if (_limit == 0) {
             return (poll , len);
@@ -493,7 +507,7 @@ contract Gov {
             for ( uint256 i = keyindex; _polls_itmap_iterate_valid(i) && (len < limit);
                 i = _polls_itmap_iterate_next(i)) {
                 Poll memory tmp = _polls_itmap_iterate_get(i);
-                if (fileter != PollStatus.All && tmp.status != fileter) {
+                if (fileter != All && tmp.status != fileter) {
                     continue;
                 }
                 poll[len++] = tmp;
@@ -513,7 +527,7 @@ contract Gov {
             for (uint256 i = keyindex; _polls_itmap_iterate_valid(i) && (len < limit);
                 i = _polls_itmap_iterate_prev(i)) {
                 Poll memory tmp = _polls_itmap_iterate_get(i);
-                if (fileter != PollStatus.All && tmp.status != fileter) {
+                if (fileter != All && tmp.status != fileter) {
                     continue;
                 }
                 poll[len++] = tmp;
@@ -577,7 +591,7 @@ contract Gov {
         uint256 length = _token_manager.participated_polls.length;
         for (uint256 i = 0; i < length - remove_poll_cnt; i++) {
             uint256 poll_id = _token_manager.participated_polls[i];
-            while (polls.data[poll_id].value.status != PollStatus.InProgress) {
+            while (polls.data[poll_id].value.status != InProgress) {
                 remove_poll_cnt++;
                 if (length - remove_poll_cnt <= i) {
                     break;

@@ -4,7 +4,7 @@ const provider = getDefaultProvider('https://data-seed-prebsc-1-s1.binance.org:8
 const wallet = new Wallet('0xff059c1e1c2fac3d0cd2ac803d77b85a94584eab7384aa1a6e7728b5019dbb7f', provider);
 const GasLimit = 10500000;
 
-const contractNFTAddr = "0xeefF381e8d0BEbBD7Af4D391374A83F07c8565cB";
+const contractNFTAddr = "0x96A140e8BBc2C84C2054C4795412C313386837A0";
 let jsonnft = require('../../build/contracts/nft.json');
 const abinft = jsonnft.abi;
 const contractnftHandler = new Contract(contractNFTAddr, abinft, wallet);
@@ -85,6 +85,8 @@ async function TestCashNFT(){
 
 async function TestInit(){
     try {
+        let getLinkRand = await contractnftHandler.getLinkRand();
+        console.log("========getLinkRand========",getLinkRand);
         console.log("-----init----");
         let res = await contractnftHandler.init("0x8168F65274751B026d6963Cc61009af7e0faB590","0x512d8a9792C4baaC5A7a8A769AaE58cAfE94B5af","0xEdd7180D9356895E833c4781cF2733af76CC3A50",{gasLimit:GasLimit});
         console.log(res);
@@ -94,10 +96,10 @@ async function TestInit(){
 }
 
 async function main(){
-    await TestMintNFT();
+    // await TestMintNFT();
     // await TestComposeNFT();
     // await TestCashNFT();
-    // await TestInit();
+    await TestInit();
 }
 
 main().catch(err =>{
